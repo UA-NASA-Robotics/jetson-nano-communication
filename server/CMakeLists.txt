@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25.0)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(server)
 
@@ -8,7 +8,7 @@ target_sources(server PRIVATE server.cpp)
 target_compile_features(server PRIVATE cxx_std_17)
 
 # === boost ===
-# find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
+find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
 
 include(FetchContent)
 
