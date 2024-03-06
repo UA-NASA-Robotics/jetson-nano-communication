@@ -1,23 +1,38 @@
 # jetson-nano-communication
 
-### Run as client
+## Running using CMake
 
-- Create directory: client/build
-- Run on terminal:
+### Preferred Method (Linux/Windows Subsystems for Linux)
+
+#### Dependencies
 
 ```
+# G++ compiler
+sudo apt-get install build-essential
+
+# Boost library for cross platform websocket dependencies
+sudo apt-get install libboost-all-dev
+
+# CMake for dependency linking and compiling
+sudo apt install cmake
+```
+
+#### Building & Running
+
+```
+# Decide whether running client or server
+# Navigate to <client or server>/build
+# (Create build directory if doesn't exist)
 cd client/build
-cmake ..
-make run
-```
-
-## Run as server
-
-- Create directory: server/build
-- Run on terminal:
-
-```
+# -- or --
 cd server/build
+
+# Generate CMake files
 cmake ..
+
+# Build with CMake
+cmake --build .
+
+# Run
 make run
 ```
