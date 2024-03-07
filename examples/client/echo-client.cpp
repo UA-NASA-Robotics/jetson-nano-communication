@@ -39,6 +39,11 @@ public:
         m_error_reason = con->get_ec().message();
     }
 
+    websocketpp::connection_hdl get_hdl()
+    {
+        return m_hdl;
+    }
+
     friend std::ostream &operator<<(std::ostream &out, connection_metadata const &data);
 
 private:
@@ -110,10 +115,19 @@ public:
     {
         websocketpp::lib::error_code ec;
 
-        // for (auto con_pair : m_connection_list) {
-        //     auto con = con_pair.second;
-        //     auto hdl =
-        // }
+        for (auto con_pair : m_connection_list)
+        {
+            auto con_metadata = con_pair.second;
+            auto hdl = con_metadata.get()->get_hdl();
+
+            m_endpoint.send(hdl, msg, websocketpp::frame::opcode::value::text, ec);
+
+            if (ec)
+            {
+                std::cout << "> Send error: " << ec.message() << std::endl;
+                continue;
+            }
+        }
     }
 
     connection_metadata::ptr get_metadata(int id) const
@@ -160,7 +174,7 @@ int main()
                 << "\nCommand List:\n"
                 << "connect <ws uri>\n"
                 << "show <connection id>\n"
-                << "send <message>\n"
+                << "send <message>"
                 << "help: Display this help text\n"
                 << "quit: Exit the program\n"
                 << std::endl;
@@ -189,7 +203,8 @@ int main()
         }
         else if (input.substr(0, 4) == "send")
         {
-            int msg = atoi(input.substr(5).c_str());
+            std::string msg = input.substr(5);
+            endpoint.send(msg);
         }
         else
         {
