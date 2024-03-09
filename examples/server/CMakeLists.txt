@@ -25,6 +25,10 @@ target_compile_features(echo-server PRIVATE cxx_std_17)
 
 # === boost ===
 find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
+include_directories(... ${Boost_INCLUDE_DIRS})
+link_directories(... ${Boost_LIBRARY_DIRS})
+target_link_libraries(echo-server ${Boost_LIBRARIES})
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 
 # run
 add_custom_target(run
