@@ -1,9 +1,9 @@
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
-
+ 
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/common/memory.hpp>
-
+ 
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -40,13 +40,14 @@ public:
         m_error_reason = con->get_ec().message();
     }
 
-    void on_close(client * c, websocketpp::connection_hdl hdl) {
+    void on_close(client * c, websocketpp::connection_hdl hdl) 
+    {
         m_status = "Closed";
         client::connection_ptr con = c->get_con_from_hdl(hdl);
         std::stringstream s;
         s << "close code: " << con->get_remote_close_code() << " (" 
-        << websocketpp::close::status::get_string(con->get_remote_close_code()) 
-        << "), close reason: " << con->get_remote_close_reason();
+      << websocketpp::close::status::get_string(con->get_remote_close_code()) 
+      << "), close reason: " << con->get_remote_close_reason();
         m_error_reason = s.str();
     }
 
@@ -141,7 +142,8 @@ public:
         }
     }
 
-    void close(int id, websocketpp::close::status::value code) {
+    void close(int id, websocketpp::close::status::value code) 
+    {
         websocketpp::lib::error_code ec;
         
         con_list::iterator metadata_it = m_connection_list.find(id);
@@ -156,47 +158,31 @@ public:
         }
     }
 
-~websocket_endpoint() {
-    m_endpoint.stop_perpetual();
-    
-    for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) {
-        if (it->second->get_status() != "Open") {
-            // Only close open connections
-            continue;
+    ~websocket_endpoint() 
+    {
+        m_endpoint.stop_perpetual();
+        
+        for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) 
+        {
+            if (it->second->get_status() != "Open") 
+            {
+                // Only close open connections
+                continue;
+            }
+            
+            std::cout << "> Closing connection " << it->second->get_id() << std::endl;
+            
+            websocketpp::lib::error_code ec;
+            m_endpoint.close(it->second->get_hdl(), websocketpp::close::status::going_away, "", ec);
+            if (ec) 
+            {
+                std::cout << "> Error closing connection " << it->second->get_id() << ": "  
+                        << ec.message() << std::endl;
+            }
         }
         
-        std::cout << "> Closing connection " << it->second->get_id() << std::endl;
-        
-        websocketpp::lib::error_code ec;
-        m_endpoint.close(it->second->get_hdl(), websocketpp::close::status::going_away, "", ec);
-        if (ec) {
-            std::cout << "> Error closing connection " << it->second->get_id() << ": "  
-                      << ec.message() << std::endl;
-        }
+        m_thread->join();
     }
-    
-    m_thread->join();
-}
-
-void send(int id, std::string message) {
-    websocketpp::lib::error_code ec;
-    
-    con_list::iterator metadata_it = m_connection_list.find(id);
-    if (metadata_it == m_connection_list.end()) {
-        std::cout << "> No connection found with id " << id << std::endl;
-        return;
-    }
-    
-    m_endpoint.send(metadata_it->second->get_hdl(), message, websocketpp::frame::opcode::text, ec);
-    if (ec) {
-        std::cout << "> Error sending message: " << ec.message() << std::endl;
-        return;
-    }
-    
-    metadata_it->second->record_sent_message(message);
-}
-
-
 
     connection_metadata::ptr get_metadata(int id) const
     {
@@ -221,47 +207,45 @@ private:
     int m_next_id;
 };
 
-// Commands:
-// help
-// list-connections
-//      ex: 0: ws://10.10.100.10:9002
-// message-history
-// connect <uri/ip>
-// send-string
-// fetch
-// disconnect <index>
-// quit
-
 int main()
 {
-    string command;
+    bool done = false;
+    std::string input;
     websocket_endpoint endpoint;
 
-    while (true) {
-        cout << "> Enter command: ";
-        cin >> command;
+    while (!done)
+    {
+        std::cout << "Enter Command: ";
+        std::getline(std::cin, input);
 
-        if (command.substr(0, 4) == "help") {
-            cout
-            << "\nCommand List: \n"
-            << "help: Display this help text\n"
-            << "quit: Exit the program\n"
-            << "connect: Connect to server using uri\n"
-            << "disconnect: Disconnect from server\n"
-            << "list: List current server connections\n"
-            << "send: Send a string to a connected server\n"
-            << "message-history: List message history of program\n"
-            << endl;
-        }else if (command.substr(0, 4) == "quit") {
-            cout << "Terminating Program...\n";
-            return 0;
-        }else if (command.substr(0, 7) == "connect"){
-            int id = endpoint.connect(command.substr(0, 7));
-                if (id != -1) {
+        if (input == "quit")
+        {
+            done = true;
+        }
+        else if (input == "help")
+        {
+            std::cout
+                << "\nCommand List:\n"
+                << "connect <ws uri>\n"
+                << "disconnect <connection id>\n"
+                << "show <connection id>\n"
+                << "send <message>"
+                << "help: Display this help text\n"
+                << "quit: Exit the program\n"
+                << std::endl;
+        }
+        else if (input.substr(0, 7) == "connect")
+        {
+            int id = endpoint.connect(input.substr(8));
+            if (id != -1)
+            {
                 std::cout << "> Created connection with id " << id << std::endl;
-                }            
-        }else if (command.substr(0, 10) == "disconnect"){
-            std::stringstream ss(command);
+            }
+        }
+
+        else if (input.substr(0, 10) == "disconnect")
+        {
+            std::stringstream ss(input);
             
             std::string cmd;
             int id;
@@ -272,30 +256,30 @@ int main()
             std::getline(ss,reason);
             
             endpoint.close(id, close_code, reason);
-        }else if (command.substr(0, 4) == "list"){
-            int id = atoi(command.substr(0, 4).c_str());
-            connection_metadata::ptr metadata = endpoint.get_metadata(id);
-                if (metadata) {
-                    std::cout << *metadata << std::endl;
-                } else {
-                    std::cout << "> Unknown connection id " << id << std::endl;
-                }
-        }else if (command.substr(0, 4) == "send"){
-            std::stringstream ss(command);
-                
-                std::string cmd;
-                int id;
-                std::string message = "";
-                
-                ss >> cmd >> id;
-                std::getline(ss,message);
-                
-                endpoint.send(id, message);
-}
-        }else if (command.substr(0, 7) == "history"){
+        }
 
-        }else {
-            cout << "> Unknown command" <<endl;
+        else if (input.substr(0, 4) == "show")
+        {
+            int id = atoi(input.substr(5).c_str());
+
+            connection_metadata::ptr metadata = endpoint.get_metadata(id);
+            if (metadata)
+            {
+                std::cout << *metadata << std::endl;
+            }
+            else
+            {
+                std::cout << "> Unknown connection id " << id << std::endl;
+            }
+        }
+        else if (input.substr(0, 4) == "send")
+        {
+            std::string msg = input.substr(5);
+            endpoint.send(msg);
+        }
+        else
+        {
+            std::cout << "> Unrecognized Command" << std::endl;
         }
     }
 
