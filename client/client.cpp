@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <thread>
 using namespace std;
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
@@ -144,10 +145,11 @@ public:
 
     void close(int id, websocketpp::close::status::value code) 
     {
-        websocketpp::lib::error_code ec;
-        
-        con_list::iterator metadata_it = m_connection_list.find(id);
-        if (metadata_it == m_connection_list.end()) {
+    websocketpp::lib::error_code ec;
+    
+    con_list::iterator metadata_it = m_connection_list.find(id);
+    if (metadata_it == m_connection_list.end()) 
+    {
             std::cout << "> No connection found with id " << id << std::endl;
             return;
         }
@@ -158,31 +160,27 @@ public:
         }
     }
 
-    ~websocket_endpoint() 
-    {
+    websocket_endpoint() {
         m_endpoint.stop_perpetual();
-        
-        for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) 
-        {
-            if (it->second->get_status() != "Open") 
-            {
-                // Only close open connections
-                continue;
-            }
-            
-            std::cout << "> Closing connection " << it->second->get_id() << std::endl;
-            
-            websocketpp::lib::error_code ec;
-            m_endpoint.close(it->second->get_hdl(), websocketpp::close::status::going_away, "", ec);
-            if (ec) 
-            {
-                std::cout << "> Error closing connection " << it->second->get_id() << ": "  
-                        << ec.message() << std::endl;
-            }
+    
+    for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) {
+        if (it->second->get_status() != "Open") {
+            // Only close open connections
+            continue;
         }
         
-        m_thread->join();
+        std::cout << "> Closing connection " << it->second->get_id() << std::endl;
+        
+        websocketpp::lib::error_code ec;
+        m_endpoint.close(it->second->get_hdl(), websocketpp::close::status::going_away, "", ec);
+        if (ec) {
+            std::cout << "> Error closing connection " << it->second->get_id() << ": "  
+                      << ec.message() << std::endl;
+        }
     }
+    
+    m_thread->join();
+}
 
     connection_metadata::ptr get_metadata(int id) const
     {
@@ -258,7 +256,7 @@ int main()
             endpoint.close(id, close_code, reason);
         }
 
-        else if (input.substr(0, 4) == "show")
+        else if (input.substr(0, 4) == "list")
         {
             int id = atoi(input.substr(5).c_str());
 
@@ -276,6 +274,10 @@ int main()
         {
             std::string msg = input.substr(5);
             endpoint.send(msg);
+        }
+        else if (input.substr(0, 7) == "history")
+        {
+            
         }
         else
         {
