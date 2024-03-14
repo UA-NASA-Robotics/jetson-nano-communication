@@ -59,7 +59,7 @@ public:
 
     friend std::ostream &operator<<(std::ostream &out, connection_metadata const &data);
 
-private:
+public:
     int m_id;
     websocketpp::connection_hdl m_hdl;
     std::string m_status;
