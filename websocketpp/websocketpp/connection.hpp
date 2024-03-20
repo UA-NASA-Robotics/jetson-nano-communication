@@ -970,7 +970,7 @@ public:
      * @param key Name of the header to get
      * @return The value of the header
      */
-    std::string const & get_response_header(std::string const & key) const;
+    std::string const & getResponseHeader(std::string const & key) const;
 
     /// Get response HTTP status code
     /**
@@ -1180,7 +1180,7 @@ public:
      *
      * @return A handle to the connection
      */
-    connection_hdl get_handle() const {
+    connection_hdl getHandle() const {
         return m_connection_hdl;
     }
 
@@ -1230,7 +1230,7 @@ public:
     /**
      * @return The WebSocket close code sent by the remote endpoint.
      */
-    close::status::value get_remote_close_code() const {
+    close::status::value getRemoteCloseCode() const {
         return m_remote_close_code;
     }
 
@@ -1238,7 +1238,7 @@ public:
     /**
      * @return The WebSocket close reason sent by the remote endpoint.
      */
-    std::string const & get_remote_close_reason() const {
+    std::string const & getRemoteCloseReason() const {
         return m_remote_close_reason;
     }
 
@@ -1251,7 +1251,7 @@ public:
      * @return Error code indicating the reason the connection was closed or
      * failed
      */
-    lib::error_code get_ec() const {
+    lib::error_code getEc() const {
         return m_ec;
     }
 

@@ -228,7 +228,7 @@ public:
      *
      * @param channels The channel value(s) to clear
      */
-    void clear_access_channels(log::level channels) {
+    void clearAccessChannels(log::level channels) {
         m_alog->clear_channels(channels);
     }
 
@@ -250,7 +250,7 @@ public:
      *
      * @param channels The channel value(s) to clear
      */
-    void clear_error_channels(log::level channels) {
+    void clearErrorChannels(log::level channels) {
         m_elog->clear_channels(channels);
     }
 
@@ -650,7 +650,7 @@ public:
     }
 
     /// Retrieves a connection_ptr from a connection_hdl (exception version)
-    connection_ptr get_con_from_hdl(connection_hdl hdl) {
+    connection_ptr getConFromHdl(connection_hdl hdl) {
         lib::error_code ec;
         connection_ptr con = this->get_con_from_hdl(hdl,ec);
         if (ec) {

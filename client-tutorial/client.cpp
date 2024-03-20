@@ -7,20 +7,20 @@ using namespace std;
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
  
-class websocket_endpoint {
+class WebsocketEndpoint {
 public:
-    websocket_endpoint () {
-        m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
-        m_endpoint.clear_error_channels(websocketpp::log::elevel::all);
+    WebsocketEndpoint () {
+        endpoint.clearAccessChannels(websocketpp::log::alevel::all);
+        endpoint.clearErrorChannels(websocketpp::log::elevel::all);
  
-        m_endpoint.init_asio();
-        m_endpoint.start_perpetual();
+        endpoint.initAsio();
+        endpoint.startPerpetual();
  
-        m_thread.reset(new websocketpp::lib::thread(&client::run, &m_endpoint));
+        thread.reset(new websocketpp::lib::thread(&client::run, &endpoint));
     }
 private:
-    client m_endpoint;
-    websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread;
+    client endpoint;
+    websocketpp::lib::shared_ptr<websocketpp::lib::thread> thread;
 };
 
 int main() {

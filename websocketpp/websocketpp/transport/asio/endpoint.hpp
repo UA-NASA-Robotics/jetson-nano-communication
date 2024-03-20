@@ -246,7 +246,7 @@ public:
      *
      * @see init_asio(io_service_ptr ptr)
      */
-    void init_asio() {
+    void initAsio() {
         // Use a smart pointer until the call is successful and ownership has 
         // successfully been taken. Use unique_ptr when available.
         // TODO: remove the use of auto_ptr when C++98/03 support is no longer
@@ -686,7 +686,7 @@ public:
      *
      * @since 0.3.0
      */
-    void start_perpetual() {
+    void startPerpetual() {
         m_work.reset(new lib::asio::io_service::work(*m_io_service));
     }
 
@@ -698,7 +698,7 @@ public:
      *
      * @since 0.3.0
      */
-    void stop_perpetual() {
+    void stopPerpetual() {
         m_work.reset();
     }
 

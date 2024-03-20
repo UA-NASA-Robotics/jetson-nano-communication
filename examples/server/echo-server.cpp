@@ -48,10 +48,10 @@ int main()
     {
         // Set logging settings
         echo_server.set_access_channels(websocketpp::log::alevel::all);
-        echo_server.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        echo_server.clearAccessChannels(websocketpp::log::alevel::frame_payload);
 
         // Initialize Asio
-        echo_server.init_asio();
+        echo_server.initAsio();
 
         // Register our message handler
         echo_server.set_message_handler(bind(&on_message, &echo_server, ::_1, ::_2));

@@ -229,7 +229,7 @@ namespace status {
      * @param [in] code The code to look up.
      * @return A human readable interpretation of the code.
      */
-    inline std::string get_string(value code) {
+    inline std::string getString(value code) {
         switch (code) {
             case normal:
                 return "Normal close";

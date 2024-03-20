@@ -536,7 +536,7 @@ connection<config>::get_request_body() const {
 
 template <typename config>
 std::string const &
-connection<config>::get_response_header(std::string const & key) const {
+connection<config>::getResponseHeader(std::string const & key) const {
     return m_response.get_header(key);
 }
 

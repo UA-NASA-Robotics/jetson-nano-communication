@@ -17,7 +17,7 @@ public:
         m_endpoint.set_access_channels(websocketpp::log::alevel::all ^ websocketpp::log::alevel::frame_payload);
  
         // Initialize Asio
-        m_endpoint.init_asio();
+        m_endpoint.initAsio();
     }
  
     void run() {
