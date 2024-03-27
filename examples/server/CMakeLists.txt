@@ -18,6 +18,8 @@ project(echo-server)
 # Add websocket
 include_directories(../../websocketpp)
 
+include_directories(ljetgpio)
+
 # add client.cpp as the main file
 add_executable(echo-server)
 target_sources(echo-server PRIVATE echo-server.cpp)

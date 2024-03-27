@@ -1,10 +1,18 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 
 #include <websocketpp/server.hpp>
+#include <jetgpio.h>
 
 #include <iostream>
 #include <string>
 #include <bitset>
+
+#define GPIO_FREQUENCY 150
+#define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
+#define NUM_PARTITIONS 0.0015 * GPIO_FREQUENCY * 256
+
+#define LEFT_PIN 32
+#define RIGHT_PIN 33
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -14,6 +22,43 @@ using websocketpp::lib::placeholders::_2;
 
 // pull out the type of messages sent by our config
 typedef server::message_ptr message_ptr;
+
+int initJetGpio() {
+    int error; // This int will store the jetpio initiallization error code
+
+    error = gpioInitialise();
+
+    if(error < 0 ){
+        printf("Jetgpio initialisation failed. Error code %d\n", error);
+        return error;
+    } else{
+        printf("Jetgpio initialisation OK. Return code: %d\n", error);
+    }
+
+    gpioSetPWMfrequency(LEFT_PIN, GPIO_FREQUENCY);
+    gpioSetPWMfrequency(RIGHT_PIN, GPIO_FREQUENCY);
+    gpioPWM(LEFT_PIN, STOP_PWM_VALUE);
+    gpioPWM(RIGHT_PIN, STOP_PWM_VALUE);
+
+    return 0;
+}
+
+void setWheelsPWM(int left, int right) {
+    setGpioPWM(LEFT_PIN, left);
+    setGpioPWM(RIGHT_PIN, right);
+}
+
+void setGpioPWM(int pin, int x) {
+    if (x < -100 || x > 100) {
+        setGpioPWM(x, 0);
+        return;
+    }
+
+    int percent_to_PWM = x*NUM_PARTITIONS/100-1;
+    int PWM_Width = STOP_PWM_VALUE + percent_to_PWM;
+    
+    gpioPWM(32, PWM_Width);
+}
 
 // Define a callback to handle incoming messages
 void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
@@ -62,6 +107,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
             std::cout << (triggers[i] ? "1" : "0") << ", ";
         }
         std::cout << std::endl;
+
+        setWheelsPWM(leftWheel, rightWheel);
     }
     else
     {
@@ -88,6 +135,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
 
 int main()
 {
+    initJetGpio();
+
     // Create a server endpoint
     server echo_server;
 
@@ -120,4 +169,6 @@ int main()
     {
         std::cout << "other exception" << std::endl;
     }
+
+    gpioTerminate();
 }
