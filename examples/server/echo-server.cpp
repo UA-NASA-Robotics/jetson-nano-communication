@@ -1,6 +1,7 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 
 #include <websocketpp/server.hpp>
+#include <unistd.h>
 #include <jetgpio.h>
 
 #include <iostream>
@@ -9,7 +10,7 @@
 
 #define GPIO_FREQUENCY 150
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
-#define NUM_PARTITIONS 0.0015 * GPIO_FREQUENCY * 256
+#define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256
 
 #define LEFT_PIN 32
 #define RIGHT_PIN 33
@@ -43,11 +44,6 @@ int initJetGpio() {
     return 0;
 }
 
-void setWheelsPWM(int left, int right) {
-    setGpioPWM(LEFT_PIN, left);
-    setGpioPWM(RIGHT_PIN, right);
-}
-
 void setGpioPWM(int pin, int x) {
     if (x < -100 || x > 100) {
         setGpioPWM(x, 0);
@@ -59,6 +55,12 @@ void setGpioPWM(int pin, int x) {
     
     gpioPWM(32, PWM_Width);
 }
+
+void setWheelsPWM(int left, int right) {
+    setGpioPWM(LEFT_PIN, left);
+    setGpioPWM(RIGHT_PIN, right);
+}
+
 
 // Define a callback to handle incoming messages
 void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)

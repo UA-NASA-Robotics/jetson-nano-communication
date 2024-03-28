@@ -18,7 +18,7 @@ project(echo-server)
 # Add websocket
 include_directories(../../websocketpp)
 
-include_directories(ljetgpio)
+include_directories(../../JETGPIO)
 
 # add client.cpp as the main file
 add_executable(echo-server)
@@ -35,7 +35,7 @@ add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 # run
 add_custom_target(run
   COMMENT "Running example server"
-  COMMAND $<TARGET_FILE:echo-server>
+  COMMAND sudo $<TARGET_FILE:echo-server>
   DEPENDS echo-server
   USES_TERMINAL
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
