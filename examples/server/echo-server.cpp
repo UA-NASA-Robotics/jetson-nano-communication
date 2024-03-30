@@ -14,6 +14,10 @@
 
 #define LEFT_PIN 32
 #define RIGHT_PIN 33
+#define ACTUATOR_1_PIN_A 35
+#define ACTUATOR_1_PIN_B 36
+#define ACTUATOR_2_PIN_A 37
+#define ACTUATOR_2_PIN_B 38
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -24,6 +28,8 @@ using websocketpp::lib::placeholders::_2;
 // pull out the type of messages sent by our config
 typedef server::message_ptr message_ptr;
 
+// Initialize Jetson general input output pins
+// And set PWM frequency and set an initial value of wavelength
 int initJetGpio() {
     int error; // This int will store the jetpio initiallization error code
 
@@ -44,6 +50,8 @@ int initJetGpio() {
     return 0;
 }
 
+
+// Set PWM in percent -100 <= x <= 100
 void setGpioPWM(int pin, int x) {
     if (x < -100 || x > 100) {
         setGpioPWM(x, 0);
@@ -56,11 +64,29 @@ void setGpioPWM(int pin, int x) {
     gpioPWM(32, PWM_Width);
 }
 
+// Set the pwm percent [-100, 100] for left and right drive motors
 void setWheelsPWM(int left, int right) {
     setGpioPWM(LEFT_PIN, left);
     setGpioPWM(RIGHT_PIN, right);
 }
 
+// Set the motion for actuator 1
+// a    b   |   motion
+// ------------------------
+// 0    0   |   no movement
+// 0    1   |   contracting
+// 1    0   |   extending
+// 1    1   |   no movement -- try not to do this one
+void setActuator1(bool a, bool b) {
+    gpioWrite(ACTUATOR_1_PIN_A, a);
+    gpioWrite(ACTUATOR_1_PIN_B, b);
+}
+
+// Set the motion for actuator 2 (same truth table as 1)
+void setActuator2(bool a, bool b) {
+    gpioWrite(ACTUATOR_2_PIN_A, a);
+    gpioWrite(ACTUATOR_2_PIN_B, b);
+}
 
 // Define a callback to handle incoming messages
 void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
@@ -111,6 +137,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         std::cout << std::endl;
 
         setWheelsPWM(leftWheel, rightWheel);
+        setActuator1(triggers[0], triggers[1]);
+        setActuator2(triggers[2], triggers[3]);
     }
     else
     {
