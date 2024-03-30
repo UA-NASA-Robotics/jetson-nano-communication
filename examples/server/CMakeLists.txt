@@ -18,12 +18,15 @@ project(echo-server)
 # Add websocket
 include_directories(../../websocketpp)
 
-include_directories(../../JETGPIO)
+add_library(jetgpio ../../JETGPIO/nano.c ../../JETGPIO/jetgpio.h)
+target_compile_features(jetgpio PUBLIC cxx_std_17)
 
 # add client.cpp as the main file
 add_executable(echo-server)
 target_sources(echo-server PRIVATE echo-server.cpp)
 target_compile_features(echo-server PRIVATE cxx_std_17)
+
+target_link_libraries(echo-server jetgpio)
 
 # === boost ===
 find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
