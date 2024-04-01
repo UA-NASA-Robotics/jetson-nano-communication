@@ -81,4 +81,9 @@ class Motor{
         gpioWrite(pinA, 0);
         getw(pinB, 0);
     }
+
+    void updateSwitches(){
+        gpioRead(switchA);
+        gpioRead(switchB);
+    }
 };
