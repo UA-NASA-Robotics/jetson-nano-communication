@@ -9,6 +9,7 @@
 #include <iostream>
 #include <unistd.h> //Idk
 #include <jetgpio.h> //library allowing for pin writing
+#include "Motor.h"
 
 int main() {
     int Init; // This int will store the jetpio initiallization error code
@@ -20,23 +21,23 @@ int main() {
         printf("Jetgpio initialisation OK. Return code: %d\n", Init);
     }
 
-
-    /* Setting up PWM frequency in Hz @ pin 32 */
-    int frequency = 150; // Can be anything from 100 to 200
-     gpioSetPWMfrequency(32, frequency);
-
-    int stop_PWM_Value = 0.0015*frequency*256; // 1.5ms/period*256 = 1.5*frequency*256 =
-    int num_Partitions = 0.0005*frequency*256;
-    gpioPWM(32, stop_PWM_Value); //sets the Pulse length to 1.5ms which is read as a stop on the sparkmax
+    Motor left_Drive_Motor(32);
+    Motor right_Drive_Motor(33);
+    Motor top_Actuator(3,5,7,8);
+    Motor bottom_Actuator(11,13,15,16);
     
     int x;
     while(true){
-        std::cout << "Enter a percentage -100% through 100% at which to run the motor: ";
+        std::cout << "Enter a command: ";
         std::cin >> x;
-        int percent_to_PWM = x*num_Partitions/100-1;
-        int PWM_Width = stop_PWM_Value + percent_to_PWM;
-        
-        gpioPWM(32, PWM_Width);
+        if( x == 'k'){
+            left_Drive_Motor.runDrive(0);
+            right_Drive_Motor.runDrive(0);
+            top_Actuator.motorStop();
+            bottom_Actuator.motorStop();
+        }
+        left_Drive_Motor.runDrive(x);
+        right_Drive_Motor.runDrive(x);
     }
 
     // Terminal gpio Library
