@@ -242,9 +242,10 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
 // Reset all robot motion to 0
 void on_disconnect()
 {
-    setWheelsPWM(0, 0);
-    setActuator1(0, 0);
-    setActuator2(0, 0);
+    left_Drive_Motor.runDrive(0);
+    right_Drive_Motor.runDrive(0);
+    actuator1.setActuator(0, 0);
+    actuator2.setActuator(0, 0);
     std::cout << "All actions stopped for now..." << std::endl;
 }
 
