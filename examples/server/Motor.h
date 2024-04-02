@@ -23,7 +23,7 @@ class Motor{
 
 
     // Run this to initialize the jetson
-    int initJetGpio(){
+    static int initJetGpio(){
         int error; // This int will store the jetpio initiallization error code
 
         error = gpioInitialise();

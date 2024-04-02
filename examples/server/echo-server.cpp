@@ -26,6 +26,14 @@
 #define LIM_SWITCH_2_EXT_PIN 24 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 
+// Initialize Jetson general input output pins
+// as well as motor Objects
+Motor::initJetGpio();
+Motor left_Drive_Motor(LEFT_PIN);
+Motor right_Drive_Motor(RIGHT_PIN);
+Motor Actuator_1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
+Motor Actuator_1(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::lib::bind;
@@ -64,15 +72,12 @@ const bool disableDriveMacros[] = {
     false  // 6: Full dig cycle
 };
 
-// Initialize Jetson general input output pins
-// as well as motor Objects
-int initMotorObjects()
-{
-    Motor::initJetGpio();
-    Motor left_Drive_Motor(LEFT_PIN);
-    Motor right_Drive_Motor(RIGHT_PIN);
-    Motor Actuator_1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
-    Motor Actuator_1(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
+
+void stopAllMotors(){
+    left_Drive_Motor.runDrive(0);
+    right_Drive_Motor.runDrive(0);
+    actuator1.setActuator(0, 0);
+    actuator2.setActuator(0, 0);
 }
 
 // Disable manual actuator control and do a full bucket dump cycle
@@ -209,10 +214,7 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     else
     {
         // Reset movement if invalid packet recieved
-        left_Drive_Motor.runDrive(0);
-        right_Drive_Motor.runDrive(0);
-        actuator1.setActuator(0, 0);
-        actuator2.setActuator(0, 0);
+        stopAllMotors();
     }
 
     // check for a special command to instruct the server to stop listening so
@@ -220,10 +222,7 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     if (msg->get_payload() == "stop-listening")
     {
         s->stop_listening();
-        left_Drive_Motor.runDrive(0);
-        right_Drive_Motor.runDrive(0);
-        actuator1.setActuator(0, 0);
-        actuator2.setActuator(0, 0);
+        stopAllMotors();
         return;
     }
 
@@ -242,16 +241,12 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
 // Reset all robot motion to 0
 void on_disconnect()
 {
-    left_Drive_Motor.runDrive(0);
-    right_Drive_Motor.runDrive(0);
-    actuator1.setActuator(0, 0);
-    actuator2.setActuator(0, 0);
+    stopAllMotors();
     std::cout << "All actions stopped for now..." << std::endl;
 }
 
 int main()
 {
-    initMotorObjects();
 
     // Create a server endpoint
     server echo_server;
