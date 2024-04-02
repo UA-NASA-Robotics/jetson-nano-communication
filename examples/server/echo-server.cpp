@@ -11,10 +11,6 @@
 #include <thread>
 #include <chrono>
 
-#define GPIO_FREQUENCY 150 // Cut these, (these are in th class def)
-#define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
-#define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256
-
 #define LEFT_PIN 32             // Left drive motor PWM signal - output pin from jetson
 #define RIGHT_PIN 33            // Right drive motor PWM signal - output pin from jetson
 #define ACTUATOR_1_PIN_A 35     // Back actuator extension signal (a) - output pin from jetson
