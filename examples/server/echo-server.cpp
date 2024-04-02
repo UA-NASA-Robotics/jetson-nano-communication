@@ -8,6 +8,7 @@
 #include <string>
 #include <bitset>
 #include <thread>
+#include <chrono>
 
 #define GPIO_FREQUENCY 150
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
@@ -33,8 +34,34 @@ using websocketpp::lib::placeholders::_2;
 // pull out the type of messages sent by our config
 typedef server::message_ptr message_ptr;
 
+std::thread macroThread;
 bool disableManualActuators = false; // Set to true to stop motion packets from moving actuators (so macros go correctly)
 bool disableManualDrive = false;     // Set to true to stop motion packets from moving drive motors (so macros go correctly)
+unsigned int prevMacroCode = -1;
+
+// Which macroCodes should disable the actuators
+// Index of boolean goes relates to a macroCode
+const bool disableActuatorMacros[] = {
+    false, // 0: E-stop
+    false, // 1: Cancel macro
+    true,  // 2: Actuators to carry position
+    true,  // 3: Actuators to fully retracted position
+    true,  // 4: Actuators to fully extended/erect position
+    true,  // 5: Full dump cycle
+    true   // 6: Full dig cycle
+};
+
+// Which macroCodes should disable the drive motors
+// Index of boolean goes relates to a macroCode
+const bool disableDriveMacros[] = {
+    false, // 0: E-stop
+    false, // 1: Cancel macro
+    false, // 2: Actuators to carry position
+    false, // 3: Actuators to fully retracted position
+    false, // 4: Actuators to fully extended/erect position
+    false, // 5: Full dump cycle
+    false  // 6: Full dig cycle
+};
 
 // Initialize Jetson general input output pins
 // And set PWM frequency and set an initial value of wavelength
@@ -156,25 +183,28 @@ void setActuator2(bool a, bool b)
 // Disable manual actuator control and do a full bucket dump cycle
 void dumpCycle()
 {
-    // if (isDoingMacro)
-    //     return;
-    // isDoingMacro = true;
+    // Retract actuator 1 in
+    // Extend actuator 2 out
 
-    // // TODO: implement dump cycle
-
-    // isDoingMacro = false;
+    // Test prints
+    for (int i = 0; i < 100; i++)
+    {
+        std::cout << "Dump Cycle: " << i << "%" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }
 
 // Disable manual actuator control and do a full bucket dig cycle
 void digCycle()
 {
-    // if (isDoingMacro)
-    //     return;
-    // isDoingMacro = true;
+    // Extend both actuators
 
-    // // TODO: implement dig cycle
-
-    // isDoingMacro = false;
+    // Test prints
+    for (int i = 0; i < 100; i++)
+    {
+        std::cout << "Dig Cycle: " << i << "%" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }
 
 // Macro function to call with macroCode input (please call in a different thread)
@@ -188,15 +218,30 @@ void digCycle()
 // 6: Full bucket dig cycle
 void doMacro(unsigned int macroCode)
 {
+    if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
+        return;
+
+    macroThread.~thread();
+
+    prevMacroCode = macroCode;
+    if (disableActuatorMacros[macroCode])
+        disableManualActuators = true;
+    if (disableDriveMacros[macroCode])
+        disableManualDrive = true;
+
     switch (macroCode)
     {
     case 5:
-        dumpCycle();
+        macroThread = std::thread(dumpCycle);
         break;
     case 6:
-        digCycle();
+        macroThread = std::thread(digCycle);
         break;
     }
+
+    prevMacroCode = -1;
+    disableManualActuators = false;
+    disableManualDrive = false;
 }
 
 // Define a callback to handle incoming messages
@@ -256,6 +301,10 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         // Decode packet as a macro packet (preprogrammed action to happen once) if packet length is 1 byte and first bit is 1
         unsigned int macroCode = (bytes[0] & 0b01111100) >> 2; // 0 < macroCode < 23; code representing macro to execute
         bool pressed = bytes[0] & 0b00000010;                  // Boolean representing if the button was pressed down
+
+        std::cout << "Macro Code: " << macroCode << "\tPressed: " << pressed << std::endl;
+
+        doMacro(macroCode);
     }
     else
     {
