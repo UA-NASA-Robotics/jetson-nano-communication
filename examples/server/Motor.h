@@ -21,6 +21,25 @@ class Motor{
         int switchA;
         int switchB;
 
+
+    // Run this to initialize the jetson
+    int initJetGpio(){
+        int error; // This int will store the jetpio initiallization error code
+
+        error = gpioInitialise();
+
+        if (error < 0)
+        {
+            printf("Jetgpio initialisation failed. Error code %d\n", error);
+            return error;
+        }
+        else
+        {
+            printf("Jetgpio initialisation OK. Return code: %d\n", error);
+        }
+        return 0;
+    }
+
     // This creates a Drive motor
     Motor(int pin){
         PWM_Pin_Num = pin;
@@ -80,6 +99,24 @@ class Motor{
     void motorStop(){
         gpioWrite(pinA, 0);
         getw(pinB, 0);
+    }
+
+    // Set the motion for actuator 1
+    // a    b   |   motion
+    // ------------------------
+    // 0    0   |   no movement !gpioRead(LIM_SWITCH_1_EXT_PIN)
+    // 0    1   |   contracting
+    // 1    0   |   extending
+    // 1    1   |   no movement -- try not to do this one
+    // This is what will be called when using the boolean input to decide movement
+    void setActuator(bool a, bool b){
+        if(a){
+            this.motorExtend();
+        }else if(b){
+            this.motorContract();
+        }else{
+            this.motorStop();
+        }
     }
 
     void updateSwitches(){
