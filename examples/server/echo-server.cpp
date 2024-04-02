@@ -42,7 +42,7 @@ typedef server::message_ptr message_ptr;
 std::thread macroThread;
 bool disableManualActuators = false; // Set to true to stop motion packets from moving actuators (so macros go correctly)
 bool disableManualDrive = false;     // Set to true to stop motion packets from moving drive motors (so macros go correctly)
-unsigned int prevMacroCode = -1;
+int prevMacroCode = -1;
 
 // Which macroCodes should disable the actuators
 // Index of boolean goes relates to a macroCode
@@ -186,7 +186,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         {
             std::cout << (triggers[i] ? "1" : "0") << ", ";
         }
-        std::cout << std::endl;
+
+        std::cout << "Macro Code: " << prevMacroCode << std::endl;
 
         if (!disableManualDrive){
             left_Drive_Motor.runDrive(leftWheelPercent);
