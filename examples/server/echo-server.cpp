@@ -13,16 +13,16 @@
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
 #define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256
 
-#define LEFT_PIN 32
-#define RIGHT_PIN 33
-#define ACTUATOR_1_PIN_A 35
-#define ACTUATOR_1_PIN_B 36
-#define LIM_SWITCH_1_EXT_PIN 37
-#define LIM_SWITCH_1_CON_PIN 38
-#define ACTUATOR_2_PIN_A 28
-#define ACTUATOR_2_PIN_B 29
-#define LIM_SWITCH_2_EXT_PIN 24
-#define LIM_SWITCH_2_CON_PIN 26
+#define LEFT_PIN 32             // Left drive motor PWM signal - output pin from jetson
+#define RIGHT_PIN 33            // Right drive motor PWM signal - output pin from jetson
+#define ACTUATOR_1_PIN_A 35     // Back actuator extension signal (a) - output pin from jetson
+#define ACTUATOR_1_PIN_B 36     // Back actuator retraction signal (b) - output pin from jetson
+#define LIM_SWITCH_1_EXT_PIN 37 // Back actuator extended position limit switch signal (1: stop) - input pin to jetson
+#define LIM_SWITCH_1_CON_PIN 38 // Back actuator retracted position limit switch signal (1: stop) - input pin to jetson
+#define ACTUATOR_2_PIN_A 28     // Front actuator extension signal (a) - output pin from jetson
+#define ACTUATOR_2_PIN_B 29     // Front actuator retration signal (b) - output pin from jetson
+#define LIM_SWITCH_2_EXT_PIN 24 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
+#define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -32,6 +32,9 @@ using websocketpp::lib::placeholders::_2;
 
 // pull out the type of messages sent by our config
 typedef server::message_ptr message_ptr;
+
+bool disableManualActuators = false; // Set to true to stop motion packets from moving actuators (so macros go correctly)
+bool disableManualDrive = false;     // Set to true to stop motion packets from moving drive motors (so macros go correctly)
 
 // Initialize Jetson general input output pins
 // And set PWM frequency and set an initial value of wavelength
@@ -141,6 +144,7 @@ void setActuator2(bool a, bool b)
     }
 }
 
+// Disable manual actuator control and do a full bucket dump cycle
 void dumpCycle()
 {
     // if (isDoingMacro)
@@ -152,6 +156,7 @@ void dumpCycle()
     // isDoingMacro = false;
 }
 
+// Disable manual actuator control and do a full bucket dig cycle
 void digCycle()
 {
     // if (isDoingMacro)
@@ -163,6 +168,7 @@ void digCycle()
     // isDoingMacro = false;
 }
 
+// Macro function to call with macroCode input (please call in a different thread)
 void doMacro(unsigned int macroCode)
 {
     switch (macroCode)
@@ -194,10 +200,9 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     }
     std::cout << std::endl;
 
-    // Only do logic if packet size is 2 bytes
     if (str.size() == 2 && !(bytes[0] & 0b10000000))
     {
-        // Joystick and trigger packet (leftmost bit is 0)
+        // Decode packet as a motion packet (manual control of motors & actuators) if length is 2 bytes and first bit is 0
         bool triggers[4]; // [left bumper, right bumper, left trigger, right trigger]
         int leftWheel, rightWheel;
         unsigned char temp = 0b01000000;
@@ -231,11 +236,13 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     }
     else if (str.size() == 1 && bytes[0] & 0b10000000)
     {
-        unsigned int btnCode = (bytes[0] & 0b01111100) >> 2;
-        bool pressed = bytes[0] & 0b00000010;
+        // Decode packet as a macro packet (preprogrammed action to happen once) if packet length is 1 byte and first bit is 1
+        unsigned int macroCode = (bytes[0] & 0b01111100) >> 2; // 0 < macroCode < 23; code representing macro to execute
+        bool pressed = bytes[0] & 0b00000010;                  // Boolean representing if the button was pressed down
     }
     else
     {
+        // Reset movement if invalid packet recieved
         setWheelsPWM(0, 0);
         setActuator1(0, 0);
         setActuator2(0, 0);
@@ -246,20 +253,25 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     if (msg->get_payload() == "stop-listening")
     {
         s->stop_listening();
+        setWheelsPWM(0, 0);
+        setActuator1(0, 0);
+        setActuator2(0, 0);
         return;
     }
 
-    try
-    {
-        s->send(hdl, msg->get_payload(), msg->get_opcode());
-    }
-    catch (websocketpp::exception const &e)
-    {
-        std::cout << "Echo failed because: "
-                  << "(" << e.what() << ")" << std::endl;
-    }
+    // Commented out example code for sending packets in the future
+    // try
+    // {
+    //     s->send(hdl, msg->get_payload(), msg->get_opcode());
+    // }
+    // catch (websocketpp::exception const &e)
+    // {
+    //     std::cout << "Echo failed because: "
+    //               << "(" << e.what() << ")" << std::endl;
+    // }
 }
 
+// Reset all robot motion to 0
 void on_disconnect()
 {
     setWheelsPWM(0, 0);
