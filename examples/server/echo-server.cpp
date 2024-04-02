@@ -218,11 +218,6 @@ void digCycle()
 // 6: Full bucket dig cycle
 void doMacro(unsigned int macroCode)
 {
-    if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
-        return;
-
-    macroThread.~thread();
-
     prevMacroCode = macroCode;
     if (disableActuatorMacros[macroCode])
         disableManualActuators = true;
@@ -232,16 +227,30 @@ void doMacro(unsigned int macroCode)
     switch (macroCode)
     {
     case 5:
-        macroThread = std::thread(dumpCycle);
+        dumpCycle();
         break;
     case 6:
-        macroThread = std::thread(digCycle);
+        digCycle();
         break;
     }
 
     prevMacroCode = -1;
     disableManualActuators = false;
     disableManualDrive = false;
+}
+
+void attemptMacro(unsigned int macroCode) {
+    if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
+        return;
+
+
+    macroThread.~thread();
+
+    try {
+        macroThread = std::thread(doMacro, macroCode);
+    } catch (...) {
+        std::cout << "Macro Terminated" << std::endl;
+    }
 }
 
 // Define a callback to handle incoming messages
@@ -291,7 +300,7 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
             std::cout << (triggers[i] ? "1" : "0") << ", ";
         }
 
-        std::cout << "Macro Code: " << prevMacroCode << std::endl;
+        std::cout << /* "Macro Code: " << prevMacroCode << */ std::endl;
 
         setWheelsPWM(leftWheel, rightWheel);
         setActuator1(triggers[2], triggers[0]);
@@ -305,7 +314,7 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
 
         std::cout << "Macro Code: " << macroCode << "\tPressed: " << pressed << std::endl;
 
-        doMacro(macroCode);
+        // attemptMacro(macroCode);
     }
     else
     {
