@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <bitset>
+#include <thread>
 
 #define GPIO_FREQUENCY 150
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
@@ -32,22 +33,21 @@ using websocketpp::lib::placeholders::_2;
 // pull out the type of messages sent by our config
 typedef server::message_ptr message_ptr;
 
-bool extend1;
-bool contract1;
-bool extend2;
-bool contract2;
-
 // Initialize Jetson general input output pins
 // And set PWM frequency and set an initial value of wavelength
-int initJetGpio() {
+int initJetGpio()
+{
     int error; // This int will store the jetpio initiallization error code
 
     error = gpioInitialise();
 
-    if(error < 0 ){
+    if (error < 0)
+    {
         printf("Jetgpio initialisation failed. Error code %d\n", error);
         return error;
-    } else{
+    }
+    else
+    {
         printf("Jetgpio initialisation OK. Return code: %d\n", error);
     }
 
@@ -67,22 +67,24 @@ int initJetGpio() {
     return 0;
 }
 
-
 // Set PWM in percent -100 <= x <= 100
-void setGpioPWM(int pin, int x) {
-    if (x < -100 || x > 100) {
+void setGpioPWM(int pin, int x)
+{
+    if (x < -100 || x > 100)
+    {
         setGpioPWM(x, 0);
         return;
     }
 
-    int percent_to_PWM = x*NUM_PARTITIONS/100-1;
+    int percent_to_PWM = x * NUM_PARTITIONS / 100 - 1;
     int PWM_Width = STOP_PWM_VALUE + percent_to_PWM;
-    
+
     gpioPWM(pin, PWM_Width);
 }
 
 // Set the pwm percent [-100, 100] for left and right drive motors
-void setWheelsPWM(int left, int right) {
+void setWheelsPWM(int left, int right)
+{
     setGpioPWM(LEFT_PIN, left);
     setGpioPWM(RIGHT_PIN, right);
 }
@@ -94,16 +96,22 @@ void setWheelsPWM(int left, int right) {
 // 0    1   |   contracting
 // 1    0   |   extending
 // 1    1   |   no movement -- try not to do this one
-void setActuator1(bool a, bool b) {
-    if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN)) {
+void setActuator1(bool a, bool b)
+{
+    if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN))
+    {
         // Extending & not hit extend limit
         gpioWrite(ACTUATOR_1_PIN_A, 1);
         gpioWrite(ACTUATOR_1_PIN_B, 0);
-    } else if (b && !gpioRead(LIM_SWITCH_1_CON_PIN)) {
+    }
+    else if (b && !gpioRead(LIM_SWITCH_1_CON_PIN))
+    {
         // Contracting & not hit contract limit
         gpioWrite(ACTUATOR_1_PIN_A, 0);
         gpioWrite(ACTUATOR_1_PIN_B, 1);
-    } else {
+    }
+    else
+    {
         // No movement or hit a limit
         gpioWrite(ACTUATOR_1_PIN_A, 0);
         gpioWrite(ACTUATOR_1_PIN_B, 0);
@@ -111,19 +119,60 @@ void setActuator1(bool a, bool b) {
 }
 
 // Set the motion for actuator 2 (same truth table as 1)
-void setActuator2(bool a, bool b) {
-    if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN)) {
+void setActuator2(bool a, bool b)
+{
+    if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN))
+    {
         // Extending & not hit extend limit
         gpioWrite(ACTUATOR_2_PIN_A, 1);
         gpioWrite(ACTUATOR_2_PIN_B, 0);
-    } else if (b && !gpioRead(LIM_SWITCH_2_CON_PIN)) {
+    }
+    else if (b && !gpioRead(LIM_SWITCH_2_CON_PIN))
+    {
         // Contracting & not hit contract limit
         gpioWrite(ACTUATOR_2_PIN_A, 0);
         gpioWrite(ACTUATOR_2_PIN_B, 1);
-    } else {
+    }
+    else
+    {
         // No movement or hit a limit
         gpioWrite(ACTUATOR_2_PIN_A, 0);
         gpioWrite(ACTUATOR_2_PIN_B, 0);
+    }
+}
+
+void dumpCycle()
+{
+    // if (isDoingMacro)
+    //     return;
+    // isDoingMacro = true;
+
+    // // TODO: implement dump cycle
+
+    // isDoingMacro = false;
+}
+
+void digCycle()
+{
+    // if (isDoingMacro)
+    //     return;
+    // isDoingMacro = true;
+
+    // // TODO: implement dig cycle
+
+    // isDoingMacro = false;
+}
+
+void doMacro(unsigned int macroCode)
+{
+    switch (macroCode)
+    {
+    case 5:
+        dumpCycle();
+        break;
+    case 6:
+        digCycle();
+        break;
     }
 }
 
@@ -182,7 +231,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     }
     else if (str.size() == 1 && bytes[0] & 0b10000000)
     {
-
+        unsigned int btnCode = (bytes[0] & 0b01111100) >> 2;
+        bool pressed = bytes[0] & 0b00000010;
     }
     else
     {
@@ -210,7 +260,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     }
 }
 
-void on_disconnect() {
+void on_disconnect()
+{
     setWheelsPWM(0, 0);
     setActuator1(0, 0);
     setActuator2(0, 0);
