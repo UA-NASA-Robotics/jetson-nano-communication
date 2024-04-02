@@ -88,6 +88,9 @@ void setGpioPWM(int pin, int x)
 // Set the pwm percent [-100, 100] for left and right drive motors
 void setWheelsPWM(int left, int right)
 {
+    if (disableManualDrive)
+        return;
+
     setGpioPWM(LEFT_PIN, left);
     setGpioPWM(RIGHT_PIN, right);
 }
@@ -101,6 +104,9 @@ void setWheelsPWM(int left, int right)
 // 1    1   |   no movement -- try not to do this one
 void setActuator1(bool a, bool b)
 {
+    if (disableManualActuators)
+        return;
+
     if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN))
     {
         // Extending & not hit extend limit
@@ -124,6 +130,9 @@ void setActuator1(bool a, bool b)
 // Set the motion for actuator 2 (same truth table as 1)
 void setActuator2(bool a, bool b)
 {
+    if (disableManualActuators)
+        return;
+
     if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN))
     {
         // Extending & not hit extend limit
@@ -169,6 +178,14 @@ void digCycle()
 }
 
 // Macro function to call with macroCode input (please call in a different thread)
+// A macro with a lower macroCode will cancel all macros with higher codes
+// 0: E-stop
+// 1: Cancel current macro
+// 2: Set actuators to carry position (middle)
+// 3: Set actuators to fully retracted position
+// 4: Set actuators to fully extended/erect position
+// 5: Full bucket dump cycle
+// 6: Full bucket dig cycle
 void doMacro(unsigned int macroCode)
 {
     switch (macroCode)
