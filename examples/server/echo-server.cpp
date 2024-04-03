@@ -131,53 +131,59 @@ void setWheelsPWM(int left, int right)
 // 1    1   |   no movement -- try not to do this one
 void setActuator1(bool a, bool b)
 {
-    if (disableManualActuators)
-        return;
+    gpioWrite(ACTUATOR_1_PIN_A, a);
+    gpioWrite(ACTUATOR_1_PIN_B, b);
 
-    if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN))
-    {
-        // Extending & not hit extend limit
-        gpioWrite(ACTUATOR_1_PIN_A, 1);
-        gpioWrite(ACTUATOR_1_PIN_B, 0);
-    }
-    else if (b && !gpioRead(LIM_SWITCH_1_CON_PIN))
-    {
-        // Contracting & not hit contract limit
-        gpioWrite(ACTUATOR_1_PIN_A, 0);
-        gpioWrite(ACTUATOR_1_PIN_B, 1);
-    }
-    else
-    {
-        // No movement or hit a limit
-        gpioWrite(ACTUATOR_1_PIN_A, 0);
-        gpioWrite(ACTUATOR_1_PIN_B, 0);
-    }
+    // if (disableManualActuators)
+    //     return;
+
+    // if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN))
+    // {
+    //     // Extending & not hit extend limit
+    //     gpioWrite(ACTUATOR_1_PIN_A, 1);
+    //     gpioWrite(ACTUATOR_1_PIN_B, 0);
+    // }
+    // else if (b && !gpioRead(LIM_SWITCH_1_CON_PIN))
+    // {
+    //     // Contracting & not hit contract limit
+    //     gpioWrite(ACTUATOR_1_PIN_A, 0);
+    //     gpioWrite(ACTUATOR_1_PIN_B, 1);
+    // }
+    // else
+    // {
+    //     // No movement or hit a limit
+    //     gpioWrite(ACTUATOR_1_PIN_A, 0);
+    //     gpioWrite(ACTUATOR_1_PIN_B, 0);
+    // }
 }
 
 // Set the motion for actuator 2 (same truth table as 1)
 void setActuator2(bool a, bool b)
 {
-    if (disableManualActuators)
-        return;
+    gpioWrite(ACTUATOR_2_PIN_A, a);
+    gpioWrite(ACTUATOR_2_PIN_B, b);
 
-    if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN))
-    {
-        // Extending & not hit extend limit
-        gpioWrite(ACTUATOR_2_PIN_A, 1);
-        gpioWrite(ACTUATOR_2_PIN_B, 0);
-    }
-    else if (b && !gpioRead(LIM_SWITCH_2_CON_PIN))
-    {
-        // Contracting & not hit contract limit
-        gpioWrite(ACTUATOR_2_PIN_A, 0);
-        gpioWrite(ACTUATOR_2_PIN_B, 1);
-    }
-    else
-    {
-        // No movement or hit a limit
-        gpioWrite(ACTUATOR_2_PIN_A, 0);
-        gpioWrite(ACTUATOR_2_PIN_B, 0);
-    }
+    // if (disableManualActuators)
+    //     return;
+
+    // if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN))
+    // {
+    //     // Extending & not hit extend limit
+    //     gpioWrite(ACTUATOR_2_PIN_A, 1);
+    //     gpioWrite(ACTUATOR_2_PIN_B, 0);
+    // }
+    // else if (b && !gpioRead(LIM_SWITCH_2_CON_PIN))
+    // {
+    //     // Contracting & not hit contract limit
+    //     gpioWrite(ACTUATOR_2_PIN_A, 0);
+    //     gpioWrite(ACTUATOR_2_PIN_B, 1);
+    // }
+    // else
+    // {
+    //     // No movement or hit a limit
+    //     gpioWrite(ACTUATOR_2_PIN_A, 0);
+    //     gpioWrite(ACTUATOR_2_PIN_B, 0);
+    // }
 }
 
 // Disable manual actuator control and do a full bucket dump cycle
