@@ -10,9 +10,11 @@
 #include <thread>
 #include <chrono>
 
-#define GPIO_FREQUENCY 150
-#define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256
-#define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256
+#define VERSION "0.0.3"
+
+#define GPIO_FREQUENCY 150 // Frequency in Hz to run the PWM at
+#define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256 // Pulse width of the PWM value to stop the drive motors
+#define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256 // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values 
 
 #define LEFT_PIN 32             // Left drive motor PWM signal - output pin from jetson
 #define RIGHT_PIN 33            // Right drive motor PWM signal - output pin from jetson
@@ -106,7 +108,7 @@ void setGpioPWM(int pin, int x)
         return;
     }
 
-    int percent_to_PWM = x * NUM_PARTITIONS / 100 - 1;
+    int percent_to_PWM = x * NUM_PARTITIONS / 100;
     int PWM_Width = STOP_PWM_VALUE + percent_to_PWM;
 
     gpioPWM(pin, PWM_Width);
@@ -115,11 +117,11 @@ void setGpioPWM(int pin, int x)
 // Set the pwm percent [-100, 100] for left and right drive motors
 void setWheelsPWM(int left, int right)
 {
-    if (disableManualDrive)
-        return;
+    // if (disableManualDrive)
+    //     return;
 
     setGpioPWM(LEFT_PIN, left);
-    setGpioPWM(RIGHT_PIN, right);
+    setGpioPWM(RIGHT_PIN, -right);
 }
 
 // Set the motion for actuator 1
@@ -266,7 +268,9 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
     //           << " and message: " << msg->get_payload()
     //           << std::endl;
 
-    std::cout << msg->get_raw_payload() << std::endl;
+    system("clear");
+    std::cout << "Version: " << VERSION << std::endl;
+    // std::cout << msg->get_raw_payload() << std::endl;
 
     std::string str = msg->get_raw_payload(); // Get packet as a string
     const char *bytes = str.c_str();          // Convert that string into a dynamic char array
@@ -297,8 +301,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         leftWheel = isLeftNegative ? -leftMagnitude : leftMagnitude;
         rightWheel = isRightNegative ? -rightMagnitude : rightMagnitude;
 
-        leftWheel *= 14.28;
-        rightWheel *= 14.28;
+        leftWheel *= 14.28 / 2;
+        rightWheel *= 14.28 / 2;
 
         std::cout << "Left: " << leftWheel << ",\tRight: " << rightWheel << ",\tTriggers: ";
         for (int i = 0; i < 4; i++)
