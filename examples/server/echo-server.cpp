@@ -12,9 +12,9 @@
 
 #define VERSION "0.0.3"
 
-#define GPIO_FREQUENCY 150 // Frequency in Hz to run the PWM at
+#define GPIO_FREQUENCY 50 // Frequency in Hz to run the PWM at
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256 // Pulse width of the PWM value to stop the drive motors
-#define NUM_PARTITIONS 0.0005 * GPIO_FREQUENCY * 256 // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values 
+#define NUM_PARTITIONS 0.001 * GPIO_FREQUENCY * 256 // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values 
 
 #define LEFT_PIN 32             // Left drive motor PWM signal - output pin from jetson
 #define RIGHT_PIN 33            // Right drive motor PWM signal - output pin from jetson
