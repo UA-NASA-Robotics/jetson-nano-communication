@@ -27,6 +27,8 @@
 #define LIM_SWITCH_2_EXT_PIN 24 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 
+#define RELAY_PIN 23
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::lib::bind;
@@ -96,6 +98,8 @@ int initJetGpio()
     gpioSetMode(LIM_SWITCH_2_EXT_PIN, JET_INPUT);
     gpioSetMode(LIM_SWITCH_2_CON_PIN, JET_INPUT);
 
+    gpioSetMode(RELAY_PIN, JET_OUTPUT);
+
     return 0;
 }
 
@@ -133,6 +137,11 @@ void setWheelsPWM(int left, int right)
 // 1    1   |   no movement -- try not to do this one
 void setActuator1(bool a, bool b)
 {
+    if(a || b){
+        gpioWrite(RELAY_PIN, 1);
+    }else{
+        gpioWrite(RELAY_PIN, 0);
+    }
     gpioWrite(ACTUATOR_1_PIN_A, a);
     gpioWrite(ACTUATOR_1_PIN_B, b);
 
@@ -162,6 +171,12 @@ void setActuator1(bool a, bool b)
 // Set the motion for actuator 2 (same truth table as 1)
 void setActuator2(bool a, bool b)
 {
+    
+    if(a || b){
+        gpioWrite(RELAY_PIN, 1);
+    }else{
+        gpioWrite(RELAY_PIN, 0);
+    }
     gpioWrite(ACTUATOR_2_PIN_A, a);
     gpioWrite(ACTUATOR_2_PIN_B, b);
 
