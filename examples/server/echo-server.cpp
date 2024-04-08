@@ -10,14 +10,14 @@
 #include <thread>
 #include <chrono>
 
-#define VERSION "0.0.3"
+#define VERSION "0.0.7"
 
 #define GPIO_FREQUENCY 50 // Frequency in Hz to run the PWM at
 #define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256 // Pulse width of the PWM value to stop the drive motors
 #define NUM_PARTITIONS 0.001 * GPIO_FREQUENCY * 256 // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values 
 
-#define LEFT_PIN 32             // Left drive motor PWM signal - output pin from jetson
-#define RIGHT_PIN 33            // Right drive motor PWM signal - output pin from jetson
+#define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
+#define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
 #define ACTUATOR_1_PIN_A 35     // Back actuator extension signal (a) - output pin from jetson
 #define ACTUATOR_1_PIN_B 36     // Back actuator retraction signal (b) - output pin from jetson
 #define LIM_SWITCH_1_EXT_PIN 37 // Back actuator extended position limit switch signal (1: stop) - input pin to jetson
@@ -42,6 +42,8 @@ std::thread macroThread;
 bool disableManualActuators = false; // Set to true to stop motion packets from moving actuators (so macros go correctly)
 bool disableManualDrive = false;     // Set to true to stop motion packets from moving drive motors (so macros go correctly)
 int prevMacroCode = -1;
+int prevRightDrive, prevLeftDrive = 0;
+int prevAct1a, prevAct1b, prevAct2a, prevAct2b = 0;
 
 // Which macroCodes should disable the actuators
 // Index of boolean goes relates to a macroCode
@@ -124,8 +126,15 @@ void setWheelsPWM(int left, int right)
     // if (disableManualDrive)
     //     return;
 
-    setGpioPWM(LEFT_PIN, left);
-    setGpioPWM(RIGHT_PIN, -right);
+    if (prevLeftDrive != left) {
+        prevLeftDrive = left;
+        setGpioPWM(LEFT_PIN, -left);
+    }
+    
+    if (prevRightDrive != right) {
+        prevRightDrive = right;
+        setGpioPWM(RIGHT_PIN, -right);
+    }
 }
 
 // Set the motion for actuator 1
@@ -316,8 +325,8 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         leftWheel = isLeftNegative ? -leftMagnitude : leftMagnitude;
         rightWheel = isRightNegative ? -rightMagnitude : rightMagnitude;
 
-        leftWheel *= 14.28 / 2;
-        rightWheel *= 14.28 / 2;
+        leftWheel *= 14.28 / 4;
+        rightWheel *= 14.28 / 4;
 
         std::cout << "Left: " << leftWheel << ",\tRight: " << rightWheel << ",\tTriggers: ";
         for (int i = 0; i < 4; i++)
