@@ -36,3 +36,10 @@ cmake --build .
 # Run
 make run
 ```
+
+#Trouble shooting the build
+if "make run" returns a clock skew you can try the following
+##clearing the build directory (make sure your in the build directory)
+sudo rm -R * 
+##or you can try to fix the modification time
+make clean
