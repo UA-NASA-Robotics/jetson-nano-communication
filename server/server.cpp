@@ -22,7 +22,7 @@ using websocketpp::lib::placeholders::_2;
 typedef server::message_ptr message_ptr;
 
 // // Commands:
-// // help
+// // help done
 // // list-connections  done
 // //      ex: 0: ws://10.10.100.10:9002
 // // message-history done

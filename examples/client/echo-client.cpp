@@ -12,6 +12,8 @@
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
+typedef client::message_ptr message_ptr;
+
 class connection_metadata
 {
 public:
@@ -28,6 +30,11 @@ public:
 
         client::connection_ptr con = c->get_con_from_hdl(hdl);
         m_server = con->get_response_header("Server");
+    }
+
+    void onMessage(client *c, websocketpp::connection_hdl hdl, message_ptr msg)
+    {
+        std::cout << msg->get_payload() << std::endl;
     }
 
     void on_fail(client *c, websocketpp::connection_hdl hdl)
@@ -100,6 +107,12 @@ public:
             metadata_ptr,
             &m_endpoint,
             websocketpp::lib::placeholders::_1));
+        con->set_message_handler(websocketpp::lib::bind(
+            &connection_metadata::onMessage,
+            metadata_ptr,
+            &m_endpoint,
+            websocketpp::lib::placeholders::_1,
+            websocketpp::lib::placeholders::_2));
         con->set_fail_handler(websocketpp::lib::bind(
             &connection_metadata::on_fail,
             metadata_ptr,
