@@ -24,10 +24,10 @@
 #define LIM_SWITCH_1_CON_PIN 38 // Back actuator retracted position limit switch signal (1: stop) - input pin to jetson
 #define ACTUATOR_2_PIN_A 28     // Front actuator extension signal (a) - output pin from jetson
 #define ACTUATOR_2_PIN_B 29     // Front actuator retration signal (b) - output pin from jetson
-#define LIM_SWITCH_2_EXT_PIN 24 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
+#define LIM_SWITCH_2_EXT_PIN 23 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 
-#define RELAY_PIN 23
+#define RELAY_PIN 24
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -146,11 +146,6 @@ void setWheelsPWM(int left, int right)
 // 1    1   |   no movement -- try not to do this one
 void setActuator1(bool a, bool b)
 {
-    if(a || b){
-        gpioWrite(RELAY_PIN, 1);
-    }else{
-        gpioWrite(RELAY_PIN, 0);
-    }
     gpioWrite(ACTUATOR_1_PIN_A, a);
     gpioWrite(ACTUATOR_1_PIN_B, b);
 
@@ -180,12 +175,6 @@ void setActuator1(bool a, bool b)
 // Set the motion for actuator 2 (same truth table as 1)
 void setActuator2(bool a, bool b)
 {
-    
-    if(a || b){
-        gpioWrite(RELAY_PIN, 1);
-    }else{
-        gpioWrite(RELAY_PIN, 0);
-    }
     gpioWrite(ACTUATOR_2_PIN_A, a);
     gpioWrite(ACTUATOR_2_PIN_B, b);
 
@@ -337,6 +326,11 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         std::cout << /* "Macro Code: " << prevMacroCode << */ std::endl;
 
         setWheelsPWM(leftWheel, rightWheel);
+        if(triggers[2]== 1 || triggers[0]== 1 || triggers[3]== 1 || triggers[1]== 1){
+            gpioWrite(RELAY_PIN, 1);
+        }else{
+            gpioWrite(RELAY_PIN, 0);
+        }
         setActuator1(triggers[2], triggers[0]);
         setActuator2(triggers[3], triggers[1]);
     }
