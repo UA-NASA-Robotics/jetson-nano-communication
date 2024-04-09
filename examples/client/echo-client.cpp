@@ -111,7 +111,7 @@ public:
         return new_id;
     }
 
-    void send(std::string msg)
+    void sendString(std::string msg)
     {
         websocketpp::lib::error_code ec;
 
@@ -204,7 +204,7 @@ int main()
         else if (input.substr(0, 4) == "send")
         {
             std::string msg = input.substr(5);
-            endpoint.send(msg);
+            endpoint.sendString(msg);
         }
         else
         {

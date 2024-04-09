@@ -11,11 +11,13 @@
 #include <sstream>
 #include <thread>
 #include <vector>
+#include <bitset>
 using namespace std;
 
 int i;
 string msg;
 vector<string> msgarray;
+vector<int> activeconnections;
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
@@ -147,7 +149,7 @@ public:
         return newid;
     }
 
-    void send(string msg)
+    void sendString(string msg)
     {
         websocketpp::lib::error_code ec;
 
@@ -164,6 +166,76 @@ public:
                 continue;
             }
         }
+    }
+
+    void sendSingleBtn(unsigned int btn, bool press) {
+        // initialize byte with leftmost bit (code) as 0
+        unsigned char b = 128;
+
+        // add btn number in the byte
+        b |= (btn << 2);
+
+        // if pressed set press bit to 1 else 0
+        if (press) {
+            b |= 0b00000010;
+        }
+
+        // get amount of ones in the byte
+        int ones = 0;
+        for (int i = 0; i < 8; i++) {
+            if ((b >> i) & 1) {
+                ones++;
+            }
+        }
+        // iteration 0
+        //   0 01010 1 0
+        // & 0 00000 0 1
+        //   0 00000 0 0 => ones = 0
+
+        // iteration 1
+        //   0 00101 0 1
+        // & 0 00000 0 1
+        //   0 00000 0 1 => ones = 1
+
+        // iteration 2
+        //   0 00010 1 0
+        // & 0 00000 0 1
+        //   0 00000 0 0 => ones = 1
+
+        // ...
+
+        // if its odd set checkbit to 1 else leave at 0
+        if (ones % 2) {
+            b |= 1;
+        }
+
+        // Turns "b" into a string and returns the string        
+        bitset<8> x(b);
+        string msg = x.to_string();
+        websocketpp::lib::error_code ec;
+
+        for (auto con_pair : connectionlist)
+        {
+            auto con_metadata = con_pair.second;
+            auto hdl = con_metadata.get()->getHdl();
+
+            endpoint.send(hdl, msg, websocketpp::frame::opcode::value::text, ec);
+
+            if (ec)
+            {
+                cout << "> Send error: " << ec.message() << endl;
+                continue;
+            }
+        }
+        
+    }
+
+    // 0 <= leftWheel < 2^4
+    void sendMotionData(int leftwheel, int rightwheel, bool triggerpresses[4]) {
+        //sets initial bit to 1 (This determines if its a motion byte or button byte)
+        unsigned char b = 0;
+
+
     }
 
     void close(int id, websocketpp::close::status::value code) 
@@ -253,7 +325,8 @@ int main()
                 << "\nCommand List:\n"
                 << "connect <ws uri>\n"
                 << "disconnect <connection id>\n"
-                << "list <connection id>\n"
+                << "show <connection id>\n"
+                << "listconnections"
                 << "send <message>\n"
                 << "help: Display this help text\n"
                 << "quit: Exit the program\n"
@@ -262,9 +335,13 @@ int main()
         else if (input.substr(0, 7) == "connect")
         {
             int id = endpoint.connect(input.substr(8));
+            activeconnections.push_back(id); //adds new connection id to the end of the activeconnections vector
             if (id != -1)
             {
-                cout << "> Created connection with id " << id << endl;
+                cout 
+                << "> Created connection with id " 
+                << id 
+                << endl;
             }
         }
 
@@ -279,11 +356,12 @@ int main()
             
             ss >> cmd >> id >> close_code;
             getline(ss,reason);
+            activeconnections.pop_back(); //removes last connection id from activeconnections vector
             
             endpoint.close(id, close_code);
         }
 
-        else if (input.substr(0, 4) == "list")
+        else if (input.substr(0, 4) == "show")
         {
             int id = atoi(input.substr(5).c_str());
 
@@ -300,7 +378,7 @@ int main()
         else if (input.substr(0, 4) == "send")
         {
             msg = input.substr(5);
-            endpoint.send(msg);
+            endpoint.sendString(msg);
             msgarray.push_back(msg);
         }
         else if (input.substr(0, 7) == "history")
@@ -320,6 +398,10 @@ int main()
                     << endl;
                 num += 1;
             }
+        }
+        else if (input.substr(0,15) == "listconnections") //command that should list active connections using code from show for loop and id's in activeconnections vector
+        {
+
         }
         else
         {
