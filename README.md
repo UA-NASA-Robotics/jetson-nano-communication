@@ -1,19 +1,11 @@
 # jetson-nano-communication
-
-## Running using CMake
-
-### Preferred Method (Linux/Windows Subsystems for Linux)
-
-#### Dependencies
-
-
-
-# jetson-nano-communication
 -Insert repository description-
-<br> 
+<br>
+
 ## About the Project
 -Insert what the project does-
 <br>
+
 ## Usage
 
 ```
@@ -34,12 +26,17 @@ cmake --build .
 make run
 ```
 <br>
+
 ## Contributing
 -Insert how users can contribute to the project-
 <br>
+
 ## Documentation
--Insert any useful documents/information relating to the project-
+Preferred Method (Linux/Windows Subsystems for Linux)
+Running using CMake
+
 <br>
+
 ## Dependencies
 
 ```
@@ -53,6 +50,7 @@ sudo apt-get install libboost-all-dev
 sudo apt install cmake
 ```
 <br>
+
 ## Contact & Help
 -Insert who maintains and contributes to the project and where users can go to get help-
-<br> <br>
+<br>
