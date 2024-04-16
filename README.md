@@ -28,6 +28,7 @@ To contribute to the project, talk with current project contributors with any id
 ## Documentation
 Preferred Method (Linux/Windows Subsystems for Linux) <br>
 Running using CMake <br>
+Websockets++ Official Website: https://docs.websocketpp.org/index.html
 
 ## Dependencies
 
