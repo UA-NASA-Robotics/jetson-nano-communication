@@ -1,9 +1,7 @@
 # jetson-nano-communication
-<br>
 
 ## About the Project
 This project's goal is to implement wireless, wifi communication using C++ and the WebSockets Communication Protocol.
-<br>
 
 ## Usage
 
