@@ -23,7 +23,6 @@ cmake --build .
 make run
 ```
 ## Contributing
--Insert how users can contribute to the project-
 To contribute to the project, talk with current project contributors with any ideas or concerns you have and they will add you to the project.
 
 ## Documentation
