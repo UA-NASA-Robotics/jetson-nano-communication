@@ -1,9 +1,8 @@
 # jetson-nano-communication
--Insert repository description-
 <br>
 
 ## About the Project
--Insert what the project does-
+This project's goal is to implement wireless, wifi communication using C++ and the WebSockets Communication Protocol.
 <br>
 
 ## Usage
@@ -27,13 +26,10 @@ make run
 ```
 ## Contributing
 -Insert how users can contribute to the project-
-<br>
 
 ## Documentation
 Preferred Method (Linux/Windows Subsystems for Linux) <br>
 Running using CMake <br>
-
-<br>
 
 ## Dependencies
 
@@ -47,8 +43,6 @@ sudo apt-get install libboost-all-dev
 # CMake for dependency linking and compiling
 sudo apt install cmake
 ```
-<br>
 
 ## Contact & Help
 -Insert who maintains and contributes to the project and where users can go to get help-
-<br>
