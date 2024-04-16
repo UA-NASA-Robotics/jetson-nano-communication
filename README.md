@@ -25,8 +25,6 @@ cmake --build .
 # Run
 make run
 ```
-<br>
-
 ## Contributing
 -Insert how users can contribute to the project-
 <br>
