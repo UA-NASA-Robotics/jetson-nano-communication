@@ -26,6 +26,7 @@ make run
 ```
 ## Contributing
 -Insert how users can contribute to the project-
+To contribute to the project, talk with current project contributors with any ideas or concerns you have and they will add you to the project.
 
 ## Documentation
 Preferred Method (Linux/Windows Subsystems for Linux) <br>
@@ -45,4 +46,9 @@ sudo apt install cmake
 ```
 
 ## Contact & Help
--Insert who maintains and contributes to the project and where users can go to get help-
+Contributors: <br>
+Ayden Randall <br>
+Nathan O'Brien <br>
+Michael Telakowicz <br>
+
+To get assistance when working with this repository, please contact any of these contributors using the contact information provided below: <br>
