@@ -30,8 +30,8 @@ make run
 <br>
 
 ## Documentation
-Preferred Method (Linux/Windows Subsystems for Linux)
-Running using CMake
+Preferred Method (Linux/Windows Subsystems for Linux) <br>
+Running using CMake <br>
 
 <br>
 
