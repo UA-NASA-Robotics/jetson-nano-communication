@@ -2,7 +2,7 @@
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.hpp)
 
-# init_target (echo-server)
+# init_target (server)
 
 # build_executable (${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 
@@ -13,33 +13,33 @@ file (GLOB HEADER_FILES *.hpp)
 
 cmake_minimum_required(VERSION 3.22.1)
 
-project(echo-server)
+project(server)
 
 # Add websocket
-include_directories(../../websocketpp)
+include_directories(websocketpp)
 
-add_library(jetgpio ../../JETGPIO/nano.c ../../JETGPIO/jetgpio.h)
+add_library(jetgpio JETGPIO/nano.c JETGPIO/jetgpio.h)
 target_compile_features(jetgpio PUBLIC cxx_std_17)
 
 # add client.cpp as the main file
-add_executable(echo-server)
-target_sources(echo-server PRIVATE echo-server.cpp)
-target_compile_features(echo-server PRIVATE cxx_std_17)
+add_executable(server)
+target_sources(server PRIVATE src/server.cpp)
+target_compile_features(server PRIVATE cxx_std_17)
 
-target_link_libraries(echo-server jetgpio)
+target_link_libraries(server jetgpio)
 
 # === boost ===
 find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
 include_directories(... ${Boost_INCLUDE_DIRS})
 link_directories(... ${Boost_LIBRARY_DIRS})
-target_link_libraries(echo-server ${Boost_LIBRARIES})
+target_link_libraries(server ${Boost_LIBRARIES})
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 
 # run
 add_custom_target(run
   COMMENT "Running example server"
-  COMMAND sudo $<TARGET_FILE:echo-server>
-  DEPENDS echo-server
+  COMMAND sudo $<TARGET_FILE:server>
+  DEPENDS server
   USES_TERMINAL
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )

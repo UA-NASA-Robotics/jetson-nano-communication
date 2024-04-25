@@ -3,7 +3,7 @@
 #include <websocketpp/server.hpp>
 #include <unistd.h>
 #include <jetgpio.h>
-#include "Motor.h"
+#include "motor.h"
 
 #include <iostream>
 #include <string>
@@ -12,10 +12,6 @@
 #include <chrono>
 
 #define VERSION "0.0.7"
-
-#define GPIO_FREQUENCY 50 // Frequency in Hz to run the PWM at
-#define STOP_PWM_VALUE 0.0015 * GPIO_FREQUENCY * 256 // Pulse width of the PWM value to stop the drive motors
-#define NUM_PARTITIONS 0.001 * GPIO_FREQUENCY * 256 // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values 
 
 #define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
@@ -29,22 +25,22 @@
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define RELAY_PIN 24
 
-// Initialize Jetson general input output pins
-// as well as motor Objects
-Motor::initJetGpio();
-Motor left_Drive_Motor(LEFT_PIN);
-Motor right_Drive_Motor(RIGHT_PIN);
-Motor Actuator_1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
-Motor Actuator_1(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
-
-typedef websocketpp::server<websocketpp::config::asio> server;
-
 using websocketpp::lib::bind;
 using websocketpp::lib::placeholders::_1;
 using websocketpp::lib::placeholders::_2;
 
-// pull out the type of messages sent by our config
+using motor::Actuator;
+using motor::DriveMotor;
+
+typedef websocketpp::server<websocketpp::config::asio> server;
 typedef server::message_ptr message_ptr;
+
+// Initialize Jetson general input output pins
+// as well as motor Objects
+DriveMotor leftDriveMotor(LEFT_PIN);
+DriveMotor rightDriveMotor(RIGHT_PIN);
+Actuator actuator1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
+Actuator actuator2(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
 
 std::thread macroThread;
 bool disableManualActuators = false; // Set to true to stop motion packets from moving actuators (so macros go correctly)
@@ -77,142 +73,19 @@ const bool disableDriveMacros[] = {
     false  // 6: Full dig cycle
 };
 
-void stopAllMotors(){
-    left_Drive_Motor.runDrive(0);
-    right_Drive_Motor.runDrive(0);
-    actuator1.setActuator(0, 0);
-    actuator2.setActuator(0, 0);
-}
-
-// Initialize Jetson general input output pins
-// And set PWM frequency and set an initial value of wavelength
-int initJetGpio()
+void stopAllMotors()
 {
-    int error; // This int will store the jetpio initiallization error code
-
-    error = gpioInitialise();
-
-    if (error < 0)
-    {
-        printf("Jetgpio initialisation failed. Error code %d\n", error);
-        return error;
-    }
-    else
-    {
-        printf("Jetgpio initialisation OK. Return code: %d\n", error);
-    }
-
-    gpioSetPWMfrequency(LEFT_PIN, GPIO_FREQUENCY);
-    gpioSetPWMfrequency(RIGHT_PIN, GPIO_FREQUENCY);
-    gpioPWM(LEFT_PIN, STOP_PWM_VALUE);
-    gpioPWM(RIGHT_PIN, STOP_PWM_VALUE);
-    gpioSetMode(ACTUATOR_1_PIN_A, JET_OUTPUT);
-    gpioSetMode(ACTUATOR_1_PIN_B, JET_OUTPUT);
-    gpioSetMode(ACTUATOR_2_PIN_A, JET_OUTPUT);
-    gpioSetMode(ACTUATOR_2_PIN_B, JET_OUTPUT);
-    gpioSetMode(LIM_SWITCH_1_EXT_PIN, JET_INPUT);
-    gpioSetMode(LIM_SWITCH_1_CON_PIN, JET_INPUT);
-    gpioSetMode(LIM_SWITCH_2_EXT_PIN, JET_INPUT);
-    gpioSetMode(LIM_SWITCH_2_CON_PIN, JET_INPUT);
-    gpioSetMode(RELAY_PIN, JET_OUTPUT);
-
-    return 0;
-}
-
-// Set PWM in percent -100 <= x <= 100
-void setGpioPWM(int pin, int x)
-{
-    if (x < -100 || x > 100)
-    {
-        setGpioPWM(x, 0);
-        return;
-    }
-
-    int percent_to_PWM = x * NUM_PARTITIONS / 100;
-    int PWM_Width = STOP_PWM_VALUE + percent_to_PWM;
-
-    gpioPWM(pin, PWM_Width);
+    leftDriveMotor.setPercent(0);
+    rightDriveMotor.setPercent(0);
+    actuator1.setMotion(0, 0);
+    actuator2.setMotion(0, 0);
 }
 
 // Set the pwm percent [-100, 100] for left and right drive motors
 void setWheelsPWM(int left, int right)
 {
-    // if (disableManualDrive)
-    //     return;
-
-    if (prevLeftDrive != left) {
-        prevLeftDrive = left;
-        setGpioPWM(LEFT_PIN, -left);
-    }
-    
-    if (prevRightDrive != right) {
-        prevRightDrive = right;
-        setGpioPWM(RIGHT_PIN, -right);
-    }
-}
-
-// Set the motion for actuator 1
-// a    b   |   motion
-// ------------------------
-// 0    0   |   no movement !gpioRead(LIM_SWITCH_1_EXT_PIN)
-// 0    1   |   contracting
-// 1    0   |   extending
-// 1    1   |   no movement -- try not to do this one
-void setActuator1(bool a, bool b)
-{
-    gpioWrite(ACTUATOR_1_PIN_A, a);
-    gpioWrite(ACTUATOR_1_PIN_B, b);
-
-    // if (disableManualActuators)
-    //     return;
-
-    // if (a && !gpioRead(LIM_SWITCH_1_EXT_PIN))
-    // {
-    //     // Extending & not hit extend limit
-    //     gpioWrite(ACTUATOR_1_PIN_A, 1);
-    //     gpioWrite(ACTUATOR_1_PIN_B, 0);
-    // }
-    // else if (b && !gpioRead(LIM_SWITCH_1_CON_PIN))
-    // {
-    //     // Contracting & not hit contract limit
-    //     gpioWrite(ACTUATOR_1_PIN_A, 0);
-    //     gpioWrite(ACTUATOR_1_PIN_B, 1);
-    // }
-    // else
-    // {
-    //     // No movement or hit a limit
-    //     gpioWrite(ACTUATOR_1_PIN_A, 0);
-    //     gpioWrite(ACTUATOR_1_PIN_B, 0);
-    // }
-}
-
-// Set the motion for actuator 2 (same truth table as 1)
-void setActuator2(bool a, bool b)
-{
-    gpioWrite(ACTUATOR_2_PIN_A, a);
-    gpioWrite(ACTUATOR_2_PIN_B, b);
-
-    // if (disableManualActuators)
-    //     return;
-
-    // if (a && !gpioRead(LIM_SWITCH_2_EXT_PIN))
-    // {
-    //     // Extending & not hit extend limit
-    //     gpioWrite(ACTUATOR_2_PIN_A, 1);
-    //     gpioWrite(ACTUATOR_2_PIN_B, 0);
-    // }
-    // else if (b && !gpioRead(LIM_SWITCH_2_CON_PIN))
-    // {
-    //     // Contracting & not hit contract limit
-    //     gpioWrite(ACTUATOR_2_PIN_A, 0);
-    //     gpioWrite(ACTUATOR_2_PIN_B, 1);
-    // }
-    // else
-    // {
-    //     // No movement or hit a limit
-    //     gpioWrite(ACTUATOR_2_PIN_A, 0);
-    //     gpioWrite(ACTUATOR_2_PIN_B, 0);
-    // }
+    leftDriveMotor.setPercent(left);
+    rightDriveMotor.setPercent(right);
 }
 
 // Disable manual actuator control and do a full bucket dump cycle
@@ -253,10 +126,10 @@ void digCycle()
 // 6: Full bucket dig cycle
 void doMacro(unsigned int macroCode)
 {
-    //if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
-        //return;
+    // if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
+    // return;
 
-    //macroThread.~thread();
+    // macroThread.~thread();
 
     prevMacroCode = macroCode;
     if (disableActuatorMacros[macroCode])
@@ -279,16 +152,19 @@ void doMacro(unsigned int macroCode)
     disableManualDrive = false;
 }
 
-void attemptMacro(unsigned int macroCode) {
+void attemptMacro(unsigned int macroCode)
+{
     if (prevMacroCode >= 0 && macroCode >= prevMacroCode)
         return;
 
-
     macroThread.~thread();
 
-    try {
+    try
+    {
         macroThread = std::thread(doMacro, macroCode);
-    } catch (...) {
+    }
+    catch (...)
+    {
         std::cout << "Macro Terminated" << std::endl;
     }
 }
@@ -345,14 +221,16 @@ void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
         std::cout << /* "Macro Code: " << prevMacroCode << */ std::endl;
 
         setWheelsPWM(leftWheelPercent, rightWheelPercent);
-        if(triggers[2]== 1 || triggers[0]== 1 || triggers[3]== 1 || triggers[1]== 1){
+        if (triggers[2] == 1 || triggers[0] == 1 || triggers[3] == 1 || triggers[1] == 1)
+        {
             gpioWrite(RELAY_PIN, 1);
-        }else{
+        }
+        else
+        {
             gpioWrite(RELAY_PIN, 0);
         }
-        setActuator1(triggers[2], triggers[0]);
-        setActuator2(triggers[3], triggers[1]);
-
+        actuator1.setMotion(triggers[2], triggers[0]);
+        actuator2.setMotion(triggers[3], triggers[1]);
     }
     else if (str.size() == 1 && bytes[0] & 0b10000000)
     {
@@ -400,9 +278,9 @@ void on_disconnect()
 
 int main()
 {
+    motor::initJetGpio(); // Initialize the jetson GPIO pins
 
-    // Create a server endpoint
-    server echo_server;
+    server echo_server; // Create a server endpoint
 
     try
     {
