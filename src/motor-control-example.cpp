@@ -9,28 +9,11 @@
 #include <iostream>
 #include <unistd.h>  //Idk
 #include <jetgpio.h> //library allowing for pin writing
-#include "motor.h"
-
-using namespace motor;
+#include "motor.hpp"
 
 int main()
 {
-    int Init; // This int will store the jetpio initiallization error code
-
-    Init = gpioInitialise();
-    if (Init < 0)
-    {
-        printf("Jetgpio initialisation failed. Error code %d\n", Init);
-    }
-    else
-    {
-        printf("Jetgpio initialisation OK. Return code: %d\n", Init);
-    }
-
-    DriveMotor left_Drive_Motor(32);
-    DriveMotor right_Drive_Motor(33);
-    Actuator top_Actuator(3, 5, 7, 8);
-    Actuator bottom_Actuator(11, 13, 15, 16);
+    MotorController motors;
 
     // These are arrays used to split the incoming command
     char arr[100];
@@ -74,47 +57,44 @@ int main()
 
         if (list[0] == "k")
         {
-            left_Drive_Motor.setPercent(0);
-            right_Drive_Motor.setPercent(0);
-            top_Actuator.stopMovement();
-            bottom_Actuator.stopMovement();
+            motors.stopMovement();
         }
         else if (list[0] == "l")
         {
-            left_Drive_Motor.setPercent(std::stoi(list[1]));
+            motors.getLeftDrive()->setPercent(std::stoi(list[1]));
         }
         else if (list[0] == "r")
         {
-            right_Drive_Motor.setPercent(std::stoi(list[1]));
+            motors.getRightDrive()->setPercent(std::stoi(list[1]));
         }
         else if (list[0] == "t")
         {
             if (list[1] == "e")
             { // sets the actuator to extend
-                top_Actuator.extend();
+                motors.getActuator1()->extend();
             }
             else if (list[1] == "c")
             { // sets the actuator to contract
-                top_Actuator.retract();
+                motors.getActuator1()->retract();
             }
             else if (list[1] == "s")
             {
-                top_Actuator.stopMovement();
+                motors.getActuator1()->stopMovement();
             }
         }
         else if (list[0] == "b")
         { // This selects the bottom Actuator
             if (list[1] == "e")
             { // sets the actuator to extend
-                bottom_Actuator.extend();
+                motors.getActuator2()->extend();
             }
             else if (list[1] == "c")
             { // sets the actuator to contract
-                bottom_Actuator.retract();
+                motors.getActuator2()->retract();
             }
             else if (list[1] == "s")
             {
-                bottom_Actuator.stopMovement();
+                motors.getActuator2()->stopMovement();
             }
         }
 
