@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <unistd.h>
-#include <jetgpio.h> //library allowing for pin writing
+#include <../JETGPIO/jetgpio.h> //library allowing for pin writing
 #include <string>
 #include <thread>
 
@@ -16,6 +16,22 @@
 #define LIM_SWITCH_2_EXT_PIN 23 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define RELAY_PIN 24
+
+int initJetGpio()
+{
+    int initError = gpioInitialise();
+
+    if (initError < 0)
+    {
+        printf("Jetgpio initialisation failed. Error code %d\n", initError);
+        return initError;
+    }
+    else
+    {
+        printf("Jetgpio initialisation OK. Return code: %d\n", initError);
+        return 0;
+    }
+}
 
 class PWMDriveMotor
 {
@@ -87,12 +103,17 @@ private:
 
     std::thread limSwitchThread;
 
-    void runSwitchUpdateLoop()
+    static void runSwitchUpdateLoop(Actuator *actuator)
     {
-        while (isRunning)
+        while (actuator->isRunning)
         {
-            canExtend = !gpioRead(switchExtendPin);
-            canRetract = !gpioRead(switchRetractPin);
+            actuator->canExtend = !gpioRead(actuator->switchExtendPin);
+            actuator->canRetract = !gpioRead(actuator->switchRetractPin);
+
+            if (!actuator->canExtend || !actuator->canRetract)
+            {
+                actuator->stopMovement();
+            }
         }
     }
 
@@ -127,13 +148,13 @@ public:
             printf("Failed to create limit switchB pin, Error code: %d\n", switchB_Error);
         }
 
-        limSwitchThread = std::thread(runSwitchUpdateLoop);
+        // limSwitchThread = std::thread(runSwitchUpdateLoop, this);
     }
 
     ~Actuator()
     {
         isRunning = false;
-        limSwitchThread.detach();
+        // limSwitchThread.detach();
     }
 
     // Set the actuator to extend, returns true if it can, false if it cannot
@@ -198,7 +219,40 @@ public:
     }
 };
 
-class MotorController
+class MotorInterface
+{
+public:
+    // Sets the drive wheel percents [-100, 100] for the left and right wheel
+    virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
+
+    // Sets the actuator motion for the left and right actuator
+    // a | b | motion
+    // --|---|-------
+    // 0 | 0 | no movement
+    // 0 | 1 | retract
+    // 1 | 0 | extend
+    // 1 | 1 | no movement (prefered not to use)
+    virtual bool setActuators(bool a1, bool b1, bool a2, bool b2) = 0;
+
+    virtual bool stopMovement() = 0;
+
+    // Cancels currently executing macro if any is executing, returns true if one was running, false if none was
+    virtual bool cancelMacro() = 0;
+
+    // Macro to execute a full dig cycle and disable manual actuator control in the meantime
+    // Returns true if successfully started, false if not
+    virtual bool digCycle() = 0;
+
+    // Macro to execute a full dump cycle and disable manual actuator control in the meantime
+    // Returns true if successfully started, false if not
+    virtual bool dumpCycle() = 0;
+
+    // Macro to turn the robot <angle> degrees, -180 <= angle <= 180
+    // Returns true if successfully started, false if not
+    virtual bool turn(int angle) = 0;
+};
+
+class MotorController : public MotorInterface
 {
 private:
     PWMDriveMotor leftDrive;
@@ -208,24 +262,6 @@ private:
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
-
-    static int initJetGpio()
-    {
-        int error; // This int will store the jetpio initiallization error code
-
-        error = gpioInitialise();
-
-        if (error < 0)
-        {
-            printf("Jetgpio initialisation failed. Error code %d\n", error);
-            return error;
-        }
-        else
-        {
-            printf("Jetgpio initialisation OK. Return code: %d\n", error);
-        }
-        return 0;
-    }
 
 public:
     MotorController()
@@ -320,6 +356,7 @@ public:
     bool cancelMacro()
     {
         // TODO: implement functionality to cancel currently executing macro
+        return false;
     }
 
     // Macro to execute a full dig cycle and disable manual actuator control in the meantime
@@ -327,6 +364,7 @@ public:
     bool digCycle()
     {
         // TODO: implement dig cycle to be executed in another thread
+        return false;
     }
 
     // Macro to execute a full dump cycle and disable manual actuator control in the meantime
@@ -334,6 +372,7 @@ public:
     bool dumpCycle()
     {
         // TODO: implement dump cycle to be executed in another thread
+        return false;
     }
 
     // Macro to turn the robot <angle> degrees, -180 <= angle <= 180
@@ -341,5 +380,82 @@ public:
     bool turn(int angle)
     {
         // TODO: implement functionality to turn the robot by <angle> degrees
+        return false;
     }
 };
+
+class SimulatedMotorController : public MotorInterface
+{
+public:
+    SimulatedMotorController() {}
+
+    // Sets the drive wheel percents [-100, 100] for the left and right wheel
+    bool setDrivePercent(int leftPercent, int rightPercent)
+    {
+        return false;
+    }
+
+    // Sets the actuator motion for the left and right actuator
+    // a | b | motion
+    // --|---|-------
+    // 0 | 0 | no movement
+    // 0 | 1 | retract
+    // 1 | 0 | extend
+    // 1 | 1 | no movement (prefered not to use)
+    bool setActuators(bool a1, bool b1, bool a2, bool b2)
+    {
+        return false;
+    }
+
+    bool stopMovement()
+    {
+        return false;
+    }
+
+    // Cancels currently executing macro if any is executing, returns true if one was running, false if none was
+    bool cancelMacro()
+    {
+        // TODO: implement functionality to cancel currently executing macro
+        return false;
+    }
+
+    // Macro to execute a full dig cycle and disable manual actuator control in the meantime
+    // Returns true if successfully started, false if not
+    bool digCycle()
+    {
+        // TODO: implement dig cycle to be executed in another thread
+        return false;
+    }
+
+    // Macro to execute a full dump cycle and disable manual actuator control in the meantime
+    // Returns true if successfully started, false if not
+    bool dumpCycle()
+    {
+        // TODO: implement dump cycle to be executed in another thread
+        return false;
+    }
+
+    // Macro to turn the robot <angle> degrees, -180 <= angle <= 180
+    // Returns true if successfully started, false if not
+    bool turn(int angle)
+    {
+        // TODO: implement functionality to turn the robot by <angle> degrees
+        return false;
+    }
+};
+
+MotorInterface *getMotorContoller()
+{
+    int error = initJetGpio();
+
+    if (error)
+    {
+        SimulatedMotorController output;
+        return &output;
+    }
+    else
+    {
+        MotorController output;
+        return &output;
+    }
+}

@@ -19,7 +19,7 @@ typedef websocketpp::server<websocketpp::config::asio> Server;
 typedef websocketpp::connection_hdl ConnectionHandle;
 typedef Server::message_ptr MessagePtr;
 
-MotorController motors;
+MotorInterface *motors = getMotorContoller();
 
 int prevMacroCode = -1;
 
@@ -77,7 +77,7 @@ void onMessage(Server *s, ConnectionHandle hdl, MessagePtr msg)
 
         std::cout << /* "Macro Code: " << prevMacroCode << */ std::endl;
 
-        motors.setDrivePercent(leftWheelPercent, rightWheelPercent);
+        motors->setDrivePercent(leftWheelPercent, rightWheelPercent);
         if (triggers[2] == 1 || triggers[0] == 1 || triggers[3] == 1 || triggers[1] == 1)
         {
             gpioWrite(RELAY_PIN, 1);
@@ -86,7 +86,7 @@ void onMessage(Server *s, ConnectionHandle hdl, MessagePtr msg)
         {
             gpioWrite(RELAY_PIN, 0);
         }
-        motors.setActuators(triggers[2], triggers[0], triggers[3], triggers[1]);
+        motors->setActuators(triggers[2], triggers[0], triggers[3], triggers[1]);
     }
     else if (str.size() == 1 && bytes[0] & 0b10000000)
     {
@@ -101,7 +101,7 @@ void onMessage(Server *s, ConnectionHandle hdl, MessagePtr msg)
     else
     {
         // Reset movement if invalid packet recieved
-        motors.stopMovement();
+        motors->stopMovement();
     }
 
     // check for a special command to instruct the server to stop listening so
@@ -109,7 +109,7 @@ void onMessage(Server *s, ConnectionHandle hdl, MessagePtr msg)
     if (msg->get_payload() == "stop-listening")
     {
         s->stop_listening();
-        motors.stopMovement();
+        motors->stopMovement();
         return;
     }
 
@@ -128,7 +128,7 @@ void onMessage(Server *s, ConnectionHandle hdl, MessagePtr msg)
 // Reset all robot motion to 0
 void on_disconnect()
 {
-    motors.stopMovement();
+    motors->stopMovement();
     std::cout << "All actions stopped for now..." << std::endl;
 }
 
