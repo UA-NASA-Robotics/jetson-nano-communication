@@ -1,8 +1,6 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 
 #include <websocketpp/server.hpp>
-#include <unistd.h>
-#include <jetgpio.h>
 #include "motor.h"
 
 #include <iostream>
@@ -32,8 +30,8 @@ using websocketpp::lib::placeholders::_2;
 using motor::Actuator;
 using motor::DriveMotor;
 
-typedef websocketpp::server<websocketpp::config::asio> server;
-typedef server::message_ptr message_ptr;
+typedef websocketpp::server<websocketpp::config::asio> Server;
+typedef Server::message_ptr MessagePtr;
 
 // Initialize Jetson general input output pins
 // as well as motor Objects
@@ -170,7 +168,7 @@ void attemptMacro(unsigned int macroCode)
 }
 
 // Define a callback to handle incoming messages
-void on_message(server *s, websocketpp::connection_hdl hdl, message_ptr msg)
+void on_message(Server *s, websocketpp::connection_hdl hdl, MessagePtr msg)
 {
     // std::cout << "on_message called with hdl: " << hdl.lock().get()
     //           << " and message: " << msg->get_payload()
@@ -280,32 +278,32 @@ int main()
 {
     motor::initJetGpio(); // Initialize the jetson GPIO pins
 
-    server echo_server; // Create a server endpoint
+    Server server; // Create a server endpoint
 
     try
     {
-        echo_server.set_reuse_addr(true);
+        server.set_reuse_addr(true);
         // Set logging settings
-        echo_server.set_access_channels(websocketpp::log::alevel::all);
-        echo_server.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        server.set_access_channels(websocketpp::log::alevel::all);
+        server.clear_access_channels(websocketpp::log::alevel::frame_payload);
 
         // Initialize Asio
-        echo_server.init_asio();
+        server.init_asio();
 
         // Register our message handler
-        echo_server.set_message_handler(bind(&on_message, &echo_server, ::_1, ::_2));
-        echo_server.set_interrupt_handler(bind(&on_disconnect));
-        echo_server.set_fail_handler(bind(&on_disconnect));
-        echo_server.set_close_handler(bind(&on_disconnect));
+        server.set_message_handler(bind(&on_message, &server, ::_1, ::_2));
+        server.set_interrupt_handler(bind(&on_disconnect));
+        server.set_fail_handler(bind(&on_disconnect));
+        server.set_close_handler(bind(&on_disconnect));
 
         // Listen on port 9002
-        echo_server.listen(9002);
+        server.listen(9002);
 
         // Start the server accept loop
-        echo_server.start_accept();
+        server.start_accept();
 
         // Start the ASIO io_service run loop
-        echo_server.run();
+        server.run();
     }
     catch (websocketpp::exception const &e)
     {
