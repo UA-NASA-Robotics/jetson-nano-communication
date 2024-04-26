@@ -222,6 +222,9 @@ public:
 class MotorInterface
 {
 public:
+    MotorInterface() {}
+    ~MotorInterface() {}
+
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
     virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
 
@@ -271,6 +274,11 @@ public:
           actuator2(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)
     {
         initJetGpio();
+    }
+
+    ~MotorController()
+    {
+        gpioTerminate();
     }
 
     PWMDriveMotor *getLeftDrive()
@@ -388,6 +396,7 @@ class SimulatedMotorController : public MotorInterface
 {
 public:
     SimulatedMotorController() {}
+    ~SimulatedMotorController() {}
 
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
     bool setDrivePercent(int leftPercent, int rightPercent)
