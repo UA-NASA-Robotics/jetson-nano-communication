@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <unistd.h>
-#include <../JETGPIO/jetgpio.h> //library allowing for pin writing
+#include <jetgpio.h> //library allowing for pin writing
 #include <string>
 #include <thread>
 
