@@ -260,3 +260,7 @@ public:
         }
     }
 };
+
+class UDPServerHandler : public ServerHandler
+{
+};

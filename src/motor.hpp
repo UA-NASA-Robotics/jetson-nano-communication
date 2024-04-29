@@ -17,21 +17,12 @@
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define RELAY_PIN 24
 
-int initJetGpio()
+enum ActuatorMotion
 {
-    int initError = gpioInitialise();
-
-    if (initError < 0)
-    {
-        printf("Jetgpio initialisation failed. Error code %d\n", initError);
-        return initError;
-    }
-    else
-    {
-        printf("Jetgpio initialisation OK. Return code: %d\n", initError);
-        return 0;
-    }
-}
+    NONE,
+    RETRACTING,
+    EXTENDING
+};
 
 class PWMDriveMotor
 {
@@ -193,21 +184,13 @@ public:
         gpioWrite(pinB, 0);
     }
 
-    // Set the motion for the actuator, returns true if it can, false if it cannot
-    // a    b   |   motion
-    // ------------------------
-    // 0    0   |   no movement
-    // 0    1   |   contracting
-    // 1    0   |   extending
-    // 1    1   |   no movement -- try not to do this one
-    // This is what will be called when using the boolean input to decide movement
-    bool setMotion(bool a, bool b)
+    bool setMotion(ActuatorMotion motion)
     {
-        if (a && !b)
+        if (motion == ActuatorMotion::EXTENDING)
         {
             return extend();
         }
-        else if (!a && b)
+        else if (motion == ActuatorMotion::RETRACTING)
         {
             return retract();
         }
@@ -228,14 +211,11 @@ public:
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
     virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
 
-    // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    virtual bool setActuators(bool a1, bool b1, bool a2, bool b2) = 0;
+    virtual bool setActuator1(ActuatorMotion motion) = 0;
+    virtual bool setActuator2(ActuatorMotion motion) = 0;
+
+    // Sets the motion to do for each of the actuators on the robot
+    virtual bool setActuators(ActuatorMotion a1Motion, ActuatorMotion a2Motion) = 0;
 
     virtual bool stopMovement() = 0;
 
@@ -316,14 +296,7 @@ public:
         }
     }
 
-    // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    bool setActuators(bool a1, bool b1, bool a2, bool b2)
+    bool setActuator1(ActuatorMotion motion)
     {
         if (disableActuators)
         {
@@ -331,10 +304,27 @@ public:
         }
         else
         {
-            actuator1.setMotion(a1, b1);
-            actuator2.setMotion(a2, b2);
-            return true;
+            return actuator1.setMotion(motion);
         }
+    }
+
+    bool setActuator2(ActuatorMotion motion)
+    {
+        if (disableActuators)
+        {
+            return false;
+        }
+        else
+        {
+            return actuator2.setMotion(motion);
+        }
+    }
+
+    bool setActuators(ActuatorMotion a1Motion, ActuatorMotion a2Motion)
+    {
+        bool success1 = actuator1.setMotion(a1Motion);
+        bool success2 = actuator2.setMotion(a2Motion);
+        return success1 && success2;
     }
 
     bool stopMovement()
@@ -354,7 +344,7 @@ public:
         }
         else
         {
-            setActuators(0, 0, 0, 0);
+            setActuators(ActuatorMotion::NONE, ActuatorMotion::NONE);
         }
 
         return true;
@@ -404,14 +394,17 @@ public:
         return false;
     }
 
-    // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    bool setActuators(bool a1, bool b1, bool a2, bool b2)
+    bool setActuator1(ActuatorMotion a1)
+    {
+        return false;
+    }
+
+    bool setActuator2(ActuatorMotion a2)
+    {
+        return false;
+    }
+
+    bool setActuators(ActuatorMotion a1Motion, ActuatorMotion a2Motion)
     {
         return false;
     }
@@ -452,6 +445,22 @@ public:
         return false;
     }
 };
+
+int initJetGpio()
+{
+    int initError = gpioInitialise();
+
+    if (initError < 0)
+    {
+        printf("Jetgpio initialisation failed. Error code %d\n", initError);
+        return initError;
+    }
+    else
+    {
+        printf("Jetgpio initialisation OK. Return code: %d\n", initError);
+        return 0;
+    }
+}
 
 MotorInterface *getMotorContoller()
 {
