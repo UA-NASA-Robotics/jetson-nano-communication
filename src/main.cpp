@@ -1,5 +1,6 @@
 #include "motor.hpp"
 #include "server.hpp"
+#include "types.hpp"
 
 #include <iostream>
 #include <string>
@@ -24,6 +25,9 @@ void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
     std::cout << "Right:\t" << data.rightDrivePercent << "%" << std::endl;
     std::cout << "Actuator 1:\t" << data.actuator1 << std::endl;
     std::cout << "Actuator 2:\t" << data.actuator2 << std::endl;
+
+    motors->setDrivePercent(data.leftDrivePercent, data.rightDrivePercent);
+    motors->setActuators(data.actuator1, data.actuator2);
 }
 
 void onMacro(MacroPacketData data, ServerHandler *serverHandler)

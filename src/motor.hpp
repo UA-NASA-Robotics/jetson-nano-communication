@@ -4,6 +4,7 @@
 #include <jetgpio.h> //library allowing for pin writing
 #include <string>
 #include <thread>
+#include "types.hpp"
 
 #define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
@@ -16,22 +17,6 @@
 #define LIM_SWITCH_2_EXT_PIN 23 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define RELAY_PIN 24
-
-int initJetGpio()
-{
-    int initError = gpioInitialise();
-
-    if (initError < 0)
-    {
-        printf("Jetgpio initialisation failed. Error code %d\n", initError);
-        return initError;
-    }
-    else
-    {
-        printf("Jetgpio initialisation OK. Return code: %d\n", initError);
-        return 0;
-    }
-}
 
 class PWMDriveMotor
 {
@@ -201,13 +186,13 @@ public:
     // 1    0   |   extending
     // 1    1   |   no movement -- try not to do this one
     // This is what will be called when using the boolean input to decide movement
-    bool setMotion(bool a, bool b)
+    bool setMotion(ActuatorMotion motion)
     {
-        if (a && !b)
+        if (motion == ActuatorMotion::EXTENDING)
         {
             return extend();
         }
-        else if (!a && b)
+        else if (motion == ActuatorMotion::RETRACTING)
         {
             return retract();
         }
@@ -229,13 +214,7 @@ public:
     virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
 
     // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    virtual bool setActuators(bool a1, bool b1, bool a2, bool b2) = 0;
+    virtual bool setActuators(ActuatorMotion a1, ActuatorMotion a2) = 0;
 
     virtual bool stopMovement() = 0;
 
@@ -273,7 +252,6 @@ public:
           actuator1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN),
           actuator2(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)
     {
-        initJetGpio();
     }
 
     ~MotorController()
@@ -317,13 +295,7 @@ public:
     }
 
     // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    bool setActuators(bool a1, bool b1, bool a2, bool b2)
+    bool setActuators(ActuatorMotion a1, ActuatorMotion a2)
     {
         if (disableActuators)
         {
@@ -331,8 +303,8 @@ public:
         }
         else
         {
-            actuator1.setMotion(a1, b1);
-            actuator2.setMotion(a2, b2);
+            actuator1.setMotion(a1);
+            actuator2.setMotion(a2);
             return true;
         }
     }
@@ -354,7 +326,7 @@ public:
         }
         else
         {
-            setActuators(0, 0, 0, 0);
+            setActuators(ActuatorMotion::NONE, ActuatorMotion::NONE);
         }
 
         return true;
@@ -405,13 +377,7 @@ public:
     }
 
     // Sets the actuator motion for the left and right actuator
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | no movement
-    // 0 | 1 | retract
-    // 1 | 0 | extend
-    // 1 | 1 | no movement (prefered not to use)
-    bool setActuators(bool a1, bool b1, bool a2, bool b2)
+    bool setActuators(ActuatorMotion a1, ActuatorMotion a2)
     {
         return false;
     }
@@ -452,6 +418,22 @@ public:
         return false;
     }
 };
+
+int initJetGpio()
+{
+    int initError = gpioInitialise();
+
+    if (initError < 0)
+    {
+        printf("Jetgpio initialisation failed. Error code %d\n", initError);
+        return initError;
+    }
+    else
+    {
+        printf("Jetgpio initialisation OK. Return code: %d\n", initError);
+        return 0;
+    }
+}
 
 MotorInterface *getMotorContoller()
 {

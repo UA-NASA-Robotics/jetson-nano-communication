@@ -6,6 +6,8 @@
 #include <functional>
 #include <vector>
 
+#include "types.hpp"
+
 #define PORT 9002
 
 using websocketpp::lib::bind;
@@ -26,13 +28,6 @@ enum Macro
     TURN_RIGHT_45,
     TURN_LEFT_45,
     TURN
-};
-
-enum ActuatorMotion
-{
-    NONE,
-    RETRACTING,
-    EXTENDING
 };
 
 // Struct containing general packet date for all types
