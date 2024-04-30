@@ -269,3 +269,28 @@ public:
         }
     }
 };
+
+// UDP server class to use with our motor controller stuff
+class UDPServerHandler : public ServerHandler
+{
+    // TODO: implement all functions defined in ServerHandler abstract class above
+private:
+public:
+    // Constructor to automatically setup the server
+    UDPServerHandler()
+    {
+        // TODO: implement constructor
+    }
+
+    // Destructor
+    ~UDPServerHandler()
+    {
+        // TODO: may not need this but implement destructor
+    }
+
+    // Runs loop to listen for incoming connections, incoming messages, and disconnections/interuptions
+    void run()
+    {
+        // TODO: implement the run loop
+    }
+};
