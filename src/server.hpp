@@ -64,23 +64,27 @@ protected:
     // Custom function type to be called when the websocket disconnects or interupts
     typedef std::function<void(ServerHandler *)> DisconnectCallback;
 
-    MotionUpdateCallback onMotionUpdate;
-    MacroCallback onMacro;
-    DisconnectCallback onDisconnectCallback;
+    MotionUpdateCallback onMotionUpdate;     // Function to call when a motion packet is received
+    MacroCallback onMacro;                   // Function to call when a macro packet is received
+    DisconnectCallback onDisconnectCallback; // Function to call when the connection is disconnected or interupted
 
 public:
+    // The run loop to continuously run until the program stops (call in the main function of the program)
     virtual void run() = 0;
 
+    // Update the function to call whenever a motion packet is received
     void setMotionUpdateCallback(MotionUpdateCallback onMotionUpdate)
     {
         this->onMotionUpdate = onMotionUpdate;
     }
 
+    // Update the function to call whenever a macro packet is received
     void setMacroCallback(MacroCallback onMacro)
     {
         this->onMacro = onMacro;
     }
 
+    // Update the function to call when the connection is disconnected or interupted
     void setDisconnectCallback(DisconnectCallback onDisconnectCallback)
     {
         this->onDisconnectCallback = onDisconnectCallback;
@@ -97,8 +101,16 @@ private:
     // Websocket++ message pointer shorthand
     typedef Server::message_ptr MessagePtr;
 
+    // Websocket++ server object definition
     Server server;
 
+    // Returns what ActuatorMotion enum item is the case based on the a and b booleans
+    // a | b | motion
+    // --|---|-------
+    // 0 | 0 | NONE
+    // 0 | 1 | RETRACTING
+    // 1 | 0 | EXTENDING
+    // 1 | 1 | NONE
     static ActuatorMotion getActuatorMotion(bool a, bool b)
     {
         if (a == b)
@@ -109,6 +121,7 @@ private:
             return ActuatorMotion::EXTENDING;
     }
 
+    // Internal message handler to call in the Websocket++ server object
     static void onMessage(TCPServerHandler *serverHandler, ConnectionHandle hdl, MessagePtr msg)
     {
         std::string str = msg->get_raw_payload(); // Get packet as a string
@@ -187,7 +200,7 @@ private:
         // }
     }
 
-    // Reset all robot motion to 0
+    // Internal method to call on disconnect with the Websocket++ server object
     static void onDisconnect(TCPServerHandler *serverHandler)
     {
         if (serverHandler->onDisconnectCallback != nullptr)
@@ -197,6 +210,7 @@ private:
     }
 
 public:
+    // Constructor to automatically set up the server
     TCPServerHandler()
     {
         try
@@ -229,7 +243,7 @@ public:
         }
     }
 
-    // Runs loop to listen for incoming connections
+    // Runs loop to listen for incoming connections, incoming messages, and disconnections/interuptions
     void run()
     {
         try
