@@ -423,30 +423,28 @@ int initJetGpio()
 {
     int initError = gpioInitialise();
 
-    if (initError < 0)
+    if (initError != 0)
     {
         printf("Jetgpio initialisation failed. Error code %d\n", initError);
-        return initError;
     }
     else
     {
         printf("Jetgpio initialisation OK. Return code: %d\n", initError);
-        return 0;
     }
+
+    return initError;
 }
 
 MotorInterface *getMotorContoller()
 {
     int error = initJetGpio();
 
-    if (error)
+    if (error != 0)
     {
-        SimulatedMotorController output;
-        return &output;
+        return new SimulatedMotorController();
     }
     else
     {
-        MotorController output;
-        return &output;
+        return new MotorController();
     }
 }
