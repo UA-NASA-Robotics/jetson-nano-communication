@@ -44,7 +44,7 @@ void onDisconnect(ServerHandler *serverHandler)
 
 int main()
 {
-    TCPServerHandler serverHandler;
+    UDPServerHandler serverHandler;
 
     serverHandler.setMotionUpdateCallback(onMotionUpdate);
     serverHandler.setMacroCallback(onMacro);
