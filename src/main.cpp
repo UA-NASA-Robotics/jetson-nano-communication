@@ -51,4 +51,6 @@ int main()
     serverHandler.setDisconnectCallback(onDisconnect);
 
     serverHandler.run();
+
+    return 0;
 }
