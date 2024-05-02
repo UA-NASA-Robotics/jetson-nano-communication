@@ -3,16 +3,6 @@
 ## About the Project
 This project's goal is to implement wireless, wifi communication between the Jetson Nano and a controller computer using C++ and the WebSockets Communication Protocol.
 
-## Installing enet
-Run these commands to get enet installed and ready to compile:
-
-sudo apt-get install automake
-sudo apt-get install autoconf
-cd ./enet-1.3.18
-autoreconf -vfi
-./configure && make && sudo make install
-sudo apt install libenet-dev
-
 ## Usage
 
 ```
@@ -40,6 +30,15 @@ Preferred Method (Linux/Windows Subsystems for Linux) <br>
 Running using CMake <br>
 Websockets++ Official Website: https://docs.websocketpp.org/index.html <br>
 Cmake Official Website: https://cmake.org/
+# Installing enet
+Run these commands to get enet installed and ready to compile:
+
+sudo apt-get install automake
+sudo apt-get install autoconf
+cd ./enet-1.3.18
+autoreconf -vfi
+./configure && make && sudo make install
+sudo apt install libenet-dev
 
 ## Dependencies
 
