@@ -2,7 +2,6 @@
 #include <enet/enet.h>
 #include <string.h>
 ENetHost * client;
-ENetHost * server;
 ENetAddress address;
 ENetEvent event;
 ENetPeer * peer;
@@ -33,30 +32,8 @@ int main (int argc, char ** argv)
         enet_host_destroy(client);
 
 
-    //Creates a ENet Server
-        /* Bind the server to the default localhost.     */
-        /* A specific host address can be specified by   */
-        /* enet_address_set_host (& address, "x.x.x.x"); */
-        
-        address.host = ENET_HOST_ANY;
-            /* Bind the server to port 1234. */
-        address.port = 9002;
-        
-        server = enet_host_create(&address /* the address to bind the server host to */, 
-                                    32      /* allow up to 32 clients and/or outgoing connections */,
-                                    2      /* allow up to 2 channels to be used, 0 and 1 */,
-                                    0      /* assume any amount of incoming bandwidth */,
-                                    0      /* assume any amount of outgoing bandwidth */);
-        if (server == NULL)
-        {
-            fprintf (stderr, "An error occurred while trying to create an ENet server host.\n");
-            exit(EXIT_FAILURE);
-        }
-        enet_host_destroy(server);
-
-
     //Connects an ENet Client to a ENet Server
-        enet_address_set_host (& address, "localhost");
+        enet_address_set_host(& address, "localhost");
         address.port = 9002;
         
         /* Initiate the connection, allocating the two channels 0 and 1. */
@@ -86,7 +63,7 @@ int main (int argc, char ** argv)
 
 
     //Disconnects an ENet client from an ENet server
-        enet_peer_disconnect (peer, 0);
+        enet_peer_disconnect(peer, 0);
         
         /* Allow up to 3 seconds for the disconnect to succeed and 
         drop any packets received packets.*/
@@ -99,11 +76,12 @@ int main (int argc, char ** argv)
                 break;
         
             case ENET_EVENT_TYPE_DISCONNECT:
-                puts ("Disconnection succeeded.");
-                return;
+                puts("Disconnection succeeded.");
+            return 1;
             }
         }
-        
+    
+    //Creates and send's packets between a client and a server
         /* We've arrived here, so the disconnect attempt didn't */
         /* succeed yet.  Force the connection down.             */
         enet_peer_reset (peer);
