@@ -30,8 +30,8 @@ Preferred Method (Linux/Windows Subsystems for Linux) <br>
 Running using CMake <br>
 Websockets++ Official Website: https://docs.websocketpp.org/index.html <br>
 Cmake Official Website: https://cmake.org/
-# Installing enet
-Run these commands to get enet installed and ready to compile:
+# Installing ENet Library
+Run these commands to get enet installed and ready to compile:<br>
 sudo apt-get install automake<br>
 sudo apt-get install autoconf<br>
 cd ./enet-1.3.18<br>
