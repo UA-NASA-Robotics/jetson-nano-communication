@@ -25,7 +25,7 @@ private:
     static const int STOP_PWM = 0.0015 * FREQUENCY * 256;       // Pulse width of the PWM value to stop the drive motors
     static const int NUM_PARTITIONS = 0.0005 * FREQUENCY * 256; // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values
     int pwmPinNum;                                              // The pin number controlling the a PWM motor
-    int prevPWM = 0;                                            // Previous PWM value
+    int prevPercent = 0;                                        // Previous PWM value
 
 public:
     PWMDriveMotor(int pin)
@@ -59,6 +59,24 @@ public:
 
     void setPercent(int percent)
     {
+        // Check if percent is outside of [-100, 100]
+        if (percent > 100)
+        {
+            percent = 100;
+        }
+        else if (percent < -100)
+        {
+            percent = -100;
+        }
+
+        // If the percent equals the previous one, then return to reduce stuttering
+        if (percent == prevPercent)
+        {
+            return;
+        }
+
+        prevPercent = percent;
+
         int percentToPWM = percent * NUM_PARTITIONS / 100;
         int dutyCycle = STOP_PWM + percentToPWM;
         int errorCode = gpioPWM(pwmPinNum, dutyCycle);
