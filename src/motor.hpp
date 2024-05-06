@@ -77,6 +77,8 @@ private:
     int pinB;             // Retration signal logic pin output for actuator
     int switchExtendPin;  // Limit switch extended logic pin input
     int switchRetractPin; // Limit switch retrated logic pin input
+    double insideAngle;   // Angle of inside limit
+    double outsideAngle;  // Angle of outside limit
 
     int prevA = 0; // Previous pin A value
     int prevB = 0; // Previous pin B value
@@ -178,6 +180,12 @@ public:
         gpioWrite(pinB, 0);
     }
 
+    double* getAngles()
+    {
+        double angles[2] = {insideAngle, outsideAngle};
+        return angles;
+    }
+
     // Set the motion for the actuator, returns true if it can, false if it cannot
     // a    b   |   motion
     // ------------------------
@@ -239,8 +247,7 @@ class MotorController : public MotorInterface
 private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
-    Actuator actuator1;
-    Actuator actuator2;
+    Actuator actuators[2];
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
@@ -249,8 +256,8 @@ public:
     MotorController()
         : leftDrive(LEFT_PIN),
           rightDrive(RIGHT_PIN),
-          actuator1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN),
-          actuator2(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)
+          actuators{{ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN},
+                    {ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN}}
     {
     }
 
@@ -269,14 +276,13 @@ public:
         return &rightDrive;
     }
 
-    Actuator *getActuator1()
+    Actuator *getActuator(int index)
     {
-        return &actuator1;
-    }
-
-    Actuator *getActuator2()
-    {
-        return &actuator2;
+        if (index >= 0 && index < 2)
+        {
+            return &actuators[index];
+        }
+        return nullptr;
     }
 
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
@@ -303,9 +309,58 @@ public:
         }
         else
         {
-            actuator1.setMotion(a1);
-            actuator2.setMotion(a2);
+            actuators[0].setMotion(a1);
+            actuators[1].setMotion(a2);
             return true;
+        }
+    }
+
+    bool setActuatorPercent(double *percent)
+    {
+        if (sizeof(percent) / sizeof(double) < 2)
+        {
+            return false;
+        }
+
+        double *endstops[2] = {actuators[0].getAngles(), actuators[1].getAngles()};
+        bool done = false;
+        double goal[2] = {0, 0};
+        bool extending[2] = {0, 0};
+        // TODO: implement reading serial data
+        double angle[2]; // read angle measures
+
+        for (int i = 0; i < 2; i++)
+        {
+            goal[i] = endstops[i][0] + percent[i] * (endstops[i][1] - endstops[i][0]);
+            if (goal[i] > angle[i])
+            {
+                extending[i] = true;
+            }
+        }
+
+        while (!done)
+        {
+            angle[2]; // read angle measures
+
+            for (int i = 0; i < 2; i++)
+            {
+                if ((angle[i] < goal[i]) & extending[i])
+                {
+                    actuators[i].setMotion(ActuatorMotion::EXTENDING);
+                }
+                else if (extending[i])
+                {
+                    actuators[i].stopMovement();
+                }
+                else if ((angle[i] > goal[i]) & !extending[i])
+                {
+                    actuators[i].setMotion(ActuatorMotion::RETRACTING);
+                }
+                else if (!extending[i])
+                {
+                    actuators[i].stopMovement();
+                }
+            }
         }
     }
 
