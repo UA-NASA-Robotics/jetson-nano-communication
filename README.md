@@ -46,13 +46,19 @@ sudo apt install cmake
 ```
 ```
 Installing ENet Library
-Run these commands to get enet installed and ready to compile:<br>
-sudo apt-get install automake<br>
-sudo apt-get install autoconf<br>
-cd ./enet-1.3.18<br>
-autoreconf -vfi<br>
-./configure && make && sudo make install<br>
-sudo apt install libenet-dev<br>
+Run these commands to get enet installed and ready to compile:
+
+sudo apt-get install automaker
+
+sudo apt-get install autoconf
+
+cd ./enet-1.3.18
+
+autoreconf -vfi
+
+./configure && make && sudo make install
+
+sudo apt install libenet-dev
 ```
 
 ## Contact & Help
