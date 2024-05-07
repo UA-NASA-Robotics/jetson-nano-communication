@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "types.hpp"
+#include <enet/enet.h>
 
 #define PORT 9002
 
@@ -68,6 +69,23 @@ protected:
     MacroCallback onMacro;                   // Function to call when a macro packet is received
     DisconnectCallback onDisconnectCallback; // Function to call when the connection is disconnected or interupted
 
+    // Returns what ActuatorMotion enum item is the case based on the a and b booleans
+    // a | b | motion
+    // --|---|-------
+    // 0 | 0 | NONE
+    // 0 | 1 | RETRACTING
+    // 1 | 0 | EXTENDING
+    // 1 | 1 | NONE
+    static ActuatorMotion getActuatorMotion(bool a, bool b)
+    {
+        if (a == b)
+            return ActuatorMotion::NONE;
+        else if (!a && b)
+            return ActuatorMotion::RETRACTING;
+        else
+            return ActuatorMotion::EXTENDING;
+    }
+
 public:
     // The run loop to continuously run until the program stops (call in the main function of the program)
     virtual void run() = 0;
@@ -103,23 +121,6 @@ private:
 
     // Websocket++ server object definition
     Server server;
-
-    // Returns what ActuatorMotion enum item is the case based on the a and b booleans
-    // a | b | motion
-    // --|---|-------
-    // 0 | 0 | NONE
-    // 0 | 1 | RETRACTING
-    // 1 | 0 | EXTENDING
-    // 1 | 1 | NONE
-    static ActuatorMotion getActuatorMotion(bool a, bool b)
-    {
-        if (a == b)
-            return ActuatorMotion::NONE;
-        else if (!a && b)
-            return ActuatorMotion::RETRACTING;
-        else
-            return ActuatorMotion::EXTENDING;
-    }
 
     // Internal message handler to call in the Websocket++ server object
     static void onMessage(TCPServerHandler *serverHandler, ConnectionHandle hdl, MessagePtr msg)
@@ -275,23 +276,151 @@ class UDPServerHandler : public ServerHandler
 {
     // TODO: implement all functions defined in ServerHandler abstract class above
 private:
+    ENetHost *server;
+    ENetAddress address;
 
 public:
     // Constructor to automatically setup the server
     UDPServerHandler()
     {
-        // TODO: implement constructor
+        // initializes ENet Library
+        if (enet_initialize() != 0)
+        {
+            std::cout << "An error occurred while initializing ENet.\n";
+            return;
+        }
+        atexit(enet_deinitialize);
+
+        // Creates a ENet Server
+        /* Bind the server to the default localhost.     */
+        /* A specific host address can be specified by   */
+        /* enet_address_set_host (& address, "x.x.x.x"); */
+
+        address.host = ENET_HOST_ANY;
+        /* Bind the server to port 1234. */
+        address.port = PORT;
+
+        server = enet_host_create(
+            &address /* the address to bind the server host to */,
+            32 /* allow up to 32 clients and/or outgoing connections */,
+            2 /* allow up to 2 channels to be used, 0 and 1 */,
+            0 /* assume any amount of incoming bandwidth */,
+            0 /* assume any amount of outgoing bandwidth */
+        );
+
+        if (server == NULL)
+        {
+            std::cout << "An error occurred while trying to create an ENet server host.\n";
+            exit(EXIT_FAILURE);
+        }
     }
 
     // Destructor
     ~UDPServerHandler()
     {
-        // TODO: may not need this but implement destructor
+        enet_host_destroy(server);
     }
 
     // Runs loop to listen for incoming connections, incoming messages, and disconnections/interuptions
     void run()
     {
-        // TODO: implement the run loop
+        ENetEvent event;
+
+        while (enet_host_service(server, &event, 100) >= 0)
+        {
+            ENetPacket *packet = event.packet;
+            const size_t length = packet != NULL ? packet->dataLength : NULL;
+            const enet_uint8 *bytes = packet != NULL ? packet->data : nullptr;
+            std::vector<std::bitset<8>> binary;
+
+            switch (event.type)
+            {
+            case ENET_EVENT_TYPE_CONNECT:
+                std::cout << "A new client connected from " << event.peer->address.host << ":" << event.peer->address.port << ".\n";
+
+                /* Store any relevant client information here. */
+                // event.peer->data = "Client information";
+
+                break;
+
+            case ENET_EVENT_TYPE_RECEIVE:
+                if (packet == NULL)
+                    continue;
+                std::cout << "A packet of length " << length << " containing " << bytes << " was received from " << event.peer->data << " on channel " << event.channelID << ".\n";
+
+                // Add bytes to the binary vector one by one
+                for (std::size_t i = 0; i < length; i++)
+                {
+                    binary.push_back(std::bitset<8>(bytes[i]));
+                }
+
+                if (length == 2 && !(bytes[0] & 0b10000000))
+                {
+                    // Decode packet as a motion packet (manual control of motors & actuators) if length is 2 bytes and first bit is 0
+                    bool triggers[4]; // [left bumper, right bumper, left trigger, right trigger]
+                    int leftWheelPercent, rightWheelPercent;
+                    unsigned char temp = 0b01000000;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        triggers[i] = bytes[0] & temp;
+                        temp >>= 1;
+                    }
+
+                    unsigned int leftMagnitude = (bytes[1] & 0b01110000) >> 4;
+                    unsigned int rightMagnitude = bytes[1] & 0b00000111;
+                    bool isLeftNegative = bytes[1] & 0b10000000;
+                    bool isRightNegative = bytes[1] & 0b00001000;
+
+                    leftWheelPercent = isLeftNegative ? -leftMagnitude : leftMagnitude;
+                    rightWheelPercent = isRightNegative ? -rightMagnitude : rightMagnitude;
+
+                    leftWheelPercent *= 14.28 * 0.25;
+                    rightWheelPercent *= 14.28 * 0.75;
+
+                    MotionPacketData data;
+                    data.rawMessage = std::string((char *)bytes, length);
+                    data.rawBinary = binary;
+                    data.leftDrivePercent = leftWheelPercent;
+                    data.rightDrivePercent = rightWheelPercent;
+                    data.actuator1 = getActuatorMotion(triggers[2], triggers[0]);
+                    data.actuator2 = getActuatorMotion(triggers[3], triggers[1]);
+
+                    if (onMotionUpdate != nullptr)
+                    {
+                        onMotionUpdate(data, this);
+                    }
+                }
+                else if ((length == 1 || length == 2) && bytes[0] & 0b10000000)
+                {
+                    // Decode packet as a macro packet (preprogrammed action to happen once) if packet length is 1 byte and first bit is 1
+                    unsigned int macroCode = (bytes[0] & 0b01111100) >> 2; // 0 < macroCode < 23; code representing macro to execute
+                    bool pressed = bytes[0] & 0b00000010;                  // Boolean representing if the button was pressed down
+
+                    MacroPacketData data;
+                    data.rawMessage = std::string((char *)bytes, length);
+                    data.rawBinary = binary;
+                    data.macro = Macro(macroCode);
+                    data.pressed = pressed;
+                    data.data = length == 2 ? bytes[1] : 0;
+
+                    if (onMacro != nullptr)
+                    {
+                        onMacro(data, this);
+                    }
+                }
+
+                /* Clean up the packet now that we're done using it. */
+                enet_packet_destroy(event.packet);
+
+                break;
+
+            case ENET_EVENT_TYPE_DISCONNECT:
+                std::cout << event.peer->data << " disconnected.\n";
+
+                /* Reset the peer's client information. */
+
+                event.peer->data = NULL;
+            }
+        }
     }
 };

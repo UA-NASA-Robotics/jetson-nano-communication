@@ -1,4 +1,3 @@
-
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.hpp)
 
@@ -8,10 +7,10 @@ project(main)
 
 include_directories(../../enet-1.3.18/include)
 
-add_library(enet ../../enet-1.3.18/unix.c ../../enet-1.3.18/include/enet/enet.h)
+add_library(enet ../../enet-1.3.18/include/enet/enet.h ../../enet-1.3.18/unix.c ../../enet-1.3.18/callbacks.c ../../enet-1.3.18/compress.c ../../enet-1.3.18/host.c ../../enet-1.3.18/list.c ../../enet-1.3.18/packet.c ../../enet-1.3.18/peer.c ../../enet-1.3.18/protocol.c)
 target_compile_features(enet PUBLIC cxx_std_17)
 
-# add udpserver.cpp as the main file
+# add client.cpp as the main file
 add_executable(main)
 target_sources(main PRIVATE udpserver.cpp)
 target_compile_features(main PRIVATE cxx_std_17)
@@ -19,11 +18,11 @@ target_compile_features(main PRIVATE cxx_std_17)
 target_link_libraries(main enet)
 
 # === boost ===
-# find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
-# include_directories(... ${Boost_INCLUDE_DIRS})
-# link_directories(... ${Boost_LIBRARY_DIRS})
-# target_link_libraries(main ${Boost_LIBRARIES})
-# add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
+include_directories(... ${Boost_INCLUDE_DIRS})
+link_directories(... ${Boost_LIBRARY_DIRS})
+target_link_libraries(main ${Boost_LIBRARIES})
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 
 # run
 add_custom_target(run
