@@ -29,7 +29,7 @@ To contribute to the project, talk with current contributors with any ideas or c
 Preferred Method (Linux/Windows Subsystems for Linux) <br>
 Running using CMake <br>
 Websockets++ Official Website: https://docs.websocketpp.org/index.html <br>
-Cmake Official Website: https://cmake.org/
+Cmake Official Website: https://cmake.org/ <br>
 ENet Library Official Website: http://enet.bespin.org/Tutorial.html <br>
 
 ## Dependencies
@@ -38,7 +38,7 @@ ENet Library Official Website: http://enet.bespin.org/Tutorial.html <br>
 # G++ compiler
 sudo apt-get install build-essential
 
-# Boost library for cross platform websocket dependencies
+# Boost library for cross-platform websocket dependencies
 sudo apt-get install libboost-all-dev
 
 # CMake for dependency linking and compiling
@@ -63,4 +63,4 @@ sudo apt install libenet-dev
 
 ## Contact & Help
 
-To get assistance when working with this repository, don't hesitate to get in touch with any of the respository contributors using the contact information provided in their profiles <br>
+To get assistance when working with this repository, don't hesitate to get in touch with any of the repository contributors using the contact information provided in their profiles <br>
