@@ -63,4 +63,4 @@ sudo apt install libenet-dev
 
 ## Contact & Help
 
-To get assistance when working with this repository, don't hesitate to get in touch with any of these contributors using the contact information provided in their profiles <br>
+To get assistance when working with this repository, don't hesitate to get in touch with any of the respository contributors using the contact information provided in their profiles <br>
