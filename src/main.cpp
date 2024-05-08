@@ -26,7 +26,7 @@ void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
     std::cout << "Actuator 1:\t" << data.actuator1 << std::endl;
     std::cout << "Actuator 2:\t" << data.actuator2 << std::endl;
 
-    motors->setDrivePercent(data.leftDrivePercent, data.rightDrivePercent);
+    motors->setDrivePercent(data.leftDrivePercent * 0.25, data.rightDrivePercent * 0.25);
     motors->setActuators(data.actuator1, data.actuator2);
 }
 
