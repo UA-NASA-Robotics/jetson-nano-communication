@@ -11,6 +11,7 @@
 #define VERSION "0.0.8"
 
 MotorInterface *motors = getMotorContoller();
+UDPServerHandler serverHandler;
 
 void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
 {
@@ -44,8 +45,6 @@ void onDisconnect(ServerHandler *serverHandler)
 
 int main()
 {
-    UDPServerHandler serverHandler;
-
     serverHandler.setMotionUpdateCallback(onMotionUpdate);
     serverHandler.setMacroCallback(onMacro);
     serverHandler.setDisconnectCallback(onDisconnect);
