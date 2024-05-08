@@ -7,6 +7,8 @@
 #include <thread>
 #include "types.hpp"
 
+#define NUM_ACTUATORS 2
+
 #define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
 #define ACTUATOR_1_PIN_A 35     // Back actuator extension signal (a) - output pin from jetson
@@ -258,8 +260,7 @@ class MotorController : public MotorInterface
 private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
-    Actuator actuator1;
-    Actuator actuator2;
+    Actuator actuators[NUM_ACTUATORS];
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
@@ -268,8 +269,8 @@ public:
     MotorController()
         : leftDrive(LEFT_PIN),
           rightDrive(RIGHT_PIN),
-          actuator1(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN),
-          actuator2(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)
+          actuators{Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN),
+                    Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)}
     {
     }
 
@@ -288,14 +289,19 @@ public:
         return &rightDrive;
     }
 
+    Actuator *getActuator(int index)
+    {
+        return &actuators[index];
+    }
+
     Actuator *getActuator1()
     {
-        return &actuator1;
+        return &actuators[0];
     }
 
     Actuator *getActuator2()
     {
-        return &actuator2;
+        return &actuators[1];
     }
 
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
@@ -322,9 +328,29 @@ public:
         }
         else
         {
-            actuator1.setMotion(a1);
-            actuator2.setMotion(a2);
+            actuators[0].setMotion(a1);
+            actuators[1].setMotion(a2);
             return true;
+        }
+    }
+
+    bool setActuators(ActuatorMotion motions[NUM_ACTUATORS])
+    {
+        if (disableActuators)
+        {
+            return false;
+        }
+        else
+        {
+            bool success = true;
+            for (int i = 0; i < NUM_ACTUATORS; i++)
+            {
+                if (!actuators[i].setMotion(motions[i]))
+                {
+                    success = false;
+                }
+            }
+            return success;
         }
     }
 
