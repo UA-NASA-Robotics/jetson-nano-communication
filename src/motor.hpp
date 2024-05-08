@@ -166,8 +166,8 @@ public:
     {
         if (canExtend)
         {
-            gpioWrite(pinA, 0);
-            gpioWrite(pinB, 1);
+            gpioWrite(pinA, 1);
+            gpioWrite(pinB, 0);
             return true;
         }
         else
@@ -181,8 +181,8 @@ public:
     {
         if (canRetract)
         {
-            gpioWrite(pinA, 1);
-            gpioWrite(pinB, 0);
+            gpioWrite(pinA, 0);
+            gpioWrite(pinB, 1);
             return true;
         }
         else
@@ -193,8 +193,8 @@ public:
 
     void stopMovement()
     {
-        gpioWrite(pinA, 0);
-        gpioWrite(pinB, 0);
+        gpioWrite(pinA, 1);
+        gpioWrite(pinB, 1);
     }
 
     // Set the motion for the actuator, returns true if it can, false if it cannot
