@@ -71,30 +71,30 @@ int main()
         {
             if (list[1] == "e")
             { // sets the actuator to extend
-                motors.getActuator1()->extend();
+                motors.getActuator(0)->extend();
             }
             else if (list[1] == "c")
             { // sets the actuator to contract
-                motors.getActuator1()->retract();
+                motors.getActuator(0)->retract();
             }
             else if (list[1] == "s")
             {
-                motors.getActuator1()->stopMovement();
+                motors.getActuator(0)->stopMovement();
             }
         }
         else if (list[0] == "b")
         { // This selects the bottom Actuator
             if (list[1] == "e")
             { // sets the actuator to extend
-                motors.getActuator2()->extend();
+                motors.getActuator(1)->extend();
             }
             else if (list[1] == "c")
             { // sets the actuator to contract
-                motors.getActuator2()->retract();
+                motors.getActuator(1)->retract();
             }
             else if (list[1] == "s")
             {
-                motors.getActuator2()->stopMovement();
+                motors.getActuator(1)->stopMovement();
             }
         }
 
