@@ -102,29 +102,8 @@ private:
     int prevA = 0; // Previous pin A value
     int prevB = 0; // Previous pin B value
 
-    bool canExtend = false;  // Read value from the limit switch extension pin
-    bool canRetract = false; // Read value from the limit switch retraction pin
-
-    bool isRunning = true;
-
-    std::thread limSwitchThread;
-
-    static void runSwitchUpdateLoop(Actuator *actuator)
-    {
-        while (actuator->isRunning)
-        {
-            actuator->canExtend = !gpioRead(actuator->switchExtendPin);
-            actuator->canRetract = !gpioRead(actuator->switchRetractPin);
-
-            if (!actuator->canExtend || !actuator->canRetract)
-            {
-                actuator->stopMovement();
-            }
-        }
-    }
-
 public:
-    Actuator(int desiredPinA, int desiredPinB, int desiredLimitA, int desiredLimitB)
+    Actuator(int desiredPinA, int desiredPinB)
     {
         pinA = desiredPinA;
         int pinA_Error = gpioSetMode(pinA, JET_OUTPUT);
@@ -139,58 +118,26 @@ public:
         {
             printf("Failed to create pinB, Error code: %d\n", pinB_Error);
         }
-
-        switchExtendPin = desiredLimitA; // This is the Pin to the full extention limit switch
-        int switchA_Error = gpioSetMode(switchExtendPin, JET_INPUT);
-        if (switchA_Error < 0)
-        {
-            printf("Failed to create limit switchA pin, Error code: %d\n", switchA_Error);
-        }
-
-        switchRetractPin = desiredLimitB; // This is the Pin to the full retraction limit switch
-        int switchB_Error = gpioSetMode(switchRetractPin, JET_INPUT);
-        if (switchB_Error < 0)
-        {
-            printf("Failed to create limit switchB pin, Error code: %d\n", switchB_Error);
-        }
-
-        // limSwitchThread = std::thread(runSwitchUpdateLoop, this);
     }
 
     ~Actuator()
     {
-        isRunning = false;
-        // limSwitchThread.detach();
     }
 
     // Set the actuator to extend, returns true if it can, false if it cannot
     bool extend()
     {
-        if (canExtend)
-        {
-            gpioWrite(pinA, 1);
-            gpioWrite(pinB, 0);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        int e1 = gpioWrite(pinA, 1);
+        int e2 = gpioWrite(pinB, 0);
+        return e1 == 0 && e2 == 0;
     }
 
     // Set the actuator to retract, returns true if it can, false if it cannot
     bool retract()
     {
-        if (canRetract)
-        {
-            gpioWrite(pinA, 0);
-            gpioWrite(pinB, 1);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        int e1 = gpioWrite(pinA, 0);
+        int e2 = gpioWrite(pinB, 1);
+        return e1 == 0 && e2 == 0;
     }
 
     void stopMovement()
@@ -269,8 +216,8 @@ public:
     MotorController()
         : leftDrive(LEFT_PIN),
           rightDrive(RIGHT_PIN),
-          actuators{Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN),
-                    Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN)}
+          actuators{Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B),
+                    Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B)}
     {
     }
 
