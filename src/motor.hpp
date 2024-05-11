@@ -28,7 +28,7 @@ class PWMDriveMotor
 private:
     static const int FREQUENCY = 150;                           // Frequency in Hz to run the PWM at
     static const int STOP_PWM = 0.0015 * FREQUENCY * 256;       // Pulse width of the PWM value to stop the drive motors
-    static const int NUM_PARTITIONS = 0.0005 * FREQUENCY * 256; // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values
+    static const int NUM_PARTITIONS = 0.001 * FREQUENCY * 256; // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values
     int pwmPinNum;                                              // The pin number controlling the a PWM motor
     int prevPercent = 0;                                        // Previous PWM value
 
@@ -107,30 +107,12 @@ private:
     int prevA = 0; // Previous pin A value
     int prevB = 0; // Previous pin B value
 
-    bool canExtend = false;  // Read value from the limit switch extension pin
-    bool canRetract = false; // Read value from the limit switch retraction pin
-
-    bool isRunning = true;
-
-    std::thread limSwitchThread;
-
-    static void runSwitchUpdateLoop(Actuator *actuator)
-    {
-        while (actuator->isRunning)
-        {
-            actuator->canExtend = !gpioRead(actuator->switchExtendPin);
-            actuator->canRetract = !gpioRead(actuator->switchRetractPin);
-
-            if (!actuator->canExtend || !actuator->canRetract)
-            {
-                actuator->stopMovement();
-            }
-        }
-    }
+    bool canExtend = true;  // Read value from the limit switch extension pin
+    bool canRetract = true; // Read value from the limit switch retraction pin
 
 public:
     Actuator() {}
-    Actuator(int desiredPinA, int desiredPinB, int desiredLimitA, int desiredLimitB)
+    Actuator(int desiredPinA, int desiredPinB)
     {
         pinA = desiredPinA;
         int pinA_Error = gpioSetMode(pinA, JET_OUTPUT);
@@ -145,29 +127,9 @@ public:
         {
             printf("Failed to create pinB, Error code: %d\n", pinB_Error);
         }
-
-        switchExtendPin = desiredLimitA; // This is the Pin to the full extention limit switch
-        int switchA_Error = gpioSetMode(switchExtendPin, JET_INPUT);
-        if (switchA_Error < 0)
-        {
-            printf("Failed to create limit switchA pin, Error code: %d\n", switchA_Error);
-        }
-
-        switchRetractPin = desiredLimitB; // This is the Pin to the full retraction limit switch
-        int switchB_Error = gpioSetMode(switchRetractPin, JET_INPUT);
-        if (switchB_Error < 0)
-        {
-            printf("Failed to create limit switchB pin, Error code: %d\n", switchB_Error);
-        }
-
-        // limSwitchThread = std::thread(runSwitchUpdateLoop, this);
     }
 
-    ~Actuator()
-    {
-        isRunning = false;
-        // limSwitchThread.detach();
-    }
+    ~Actuator() {}
 
     // Set the actuator to extend, returns true if it can, false if it cannot
     bool extend()
@@ -286,8 +248,8 @@ public:
         rightDrive = PWMDriveMotor(RIGHT_PIN);
         actuators[0].~Actuator();
         actuators[1].~Actuator();
-        new (&actuators[0]) Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
-        new (&actuators[1]) Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
+        actuators[0] = Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B);
+        actuators[1] = Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B);
         // arduino.~Serial();
         // new (&arduino) serial::Serial(PORT_ARD, 115200);
     }
