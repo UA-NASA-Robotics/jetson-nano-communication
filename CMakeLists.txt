@@ -31,7 +31,6 @@ add_library(serial lib/serial/src/serial.cc lib/serial/src/impl/unix.cc)
 
 # Add enet
 include_directories(enet-1.3.18/include)
-add_library(serial lib/serial/src/serial.cc lib/serial/src/impl/unix.cc)
 add_library(enet enet-1.3.18/include/enet/enet.h enet-1.3.18/unix.c enet-1.3.18/callbacks.c enet-1.3.18/compress.c enet-1.3.18/host.c enet-1.3.18/list.c enet-1.3.18/packet.c enet-1.3.18/peer.c enet-1.3.18/protocol.c)
 target_compile_features(enet PUBLIC cxx_std_17)
 
