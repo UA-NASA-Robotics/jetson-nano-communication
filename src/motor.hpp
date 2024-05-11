@@ -490,7 +490,7 @@ int initJetGpio()
 {
     int initError = gpioInitialise();
 
-    if (initError != 0)
+    if (initError != 1)
     {
         printf("Jetgpio initialisation failed. Error code %d\n", initError);
     }
