@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include "types.hpp"
+#include "serial/serial.h"
 
 #define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
@@ -16,7 +17,8 @@
 #define ACTUATOR_2_PIN_B 29     // Front actuator retration signal (b) - output pin from jetson
 #define LIM_SWITCH_2_EXT_PIN 23 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
 #define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
-#define RELAY_PIN 24
+#define RELAY_PIN 51
+#define PORT_ARD "/dev/ttyACM0"
 
 class PWMDriveMotor
 {
@@ -28,6 +30,7 @@ private:
     int prevPWM = 0;                                            // Previous PWM value
 
 public:
+    PWMDriveMotor() {}
     PWMDriveMotor(int pin)
     {
         pwmPinNum = pin;
@@ -105,6 +108,7 @@ private:
     }
 
 public:
+    Actuator() {}
     Actuator(int desiredPinA, int desiredPinB, int desiredLimitA, int desiredLimitB)
     {
         pinA = desiredPinA;
@@ -182,8 +186,7 @@ public:
 
     double* getAngles()
     {
-        double angles[2] = {insideAngle, outsideAngle};
-        return angles;
+        return new double[2] {insideAngle, outsideAngle};
     }
 
     // Set the motion for the actuator, returns true if it can, false if it cannot
@@ -218,6 +221,8 @@ public:
     MotorInterface() {}
     ~MotorInterface() {}
 
+    serial::Serial arduino;
+
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
     virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
 
@@ -248,17 +253,22 @@ private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
     Actuator actuators[2];
+    serial::Serial arduino;
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
 
 public:
     MotorController()
-        : leftDrive(LEFT_PIN),
-          rightDrive(RIGHT_PIN),
-          actuators{{ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN},
-                    {ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN}}
     {
+        leftDrive = PWMDriveMotor(LEFT_PIN);
+        rightDrive = PWMDriveMotor(RIGHT_PIN);
+        actuators[0].~Actuator();
+        actuators[1].~Actuator();
+        new (&actuators[0]) Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
+        new (&actuators[1]) Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
+        arduino.~Serial();
+        new (&arduino) serial::Serial(PORT_ARD, 115200);
     }
 
     ~MotorController()
@@ -317,11 +327,6 @@ public:
 
     bool setActuatorPercent(double *percent)
     {
-        if (sizeof(percent) / sizeof(double) < 2)
-        {
-            return false;
-        }
-
         double *endstops[2] = {actuators[0].getAngles(), actuators[1].getAngles()};
         bool done = false;
         double goal[2] = {0, 0};

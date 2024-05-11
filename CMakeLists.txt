@@ -22,13 +22,20 @@ include_directories(JETGPIO)
 # Add motor-controls
 include_directories(motor-controls)
 
+include_directories(lib)
+
 add_library(jetgpio JETGPIO/nano.c JETGPIO/jetgpio.h)
 target_compile_features(jetgpio PUBLIC cxx_std_17)
+
+add_library(serial lib/serial/src/serial.cc lib/serial/src/impl/unix.cc)
 
 # add client.cpp as the main file
 add_executable(main)
 target_sources(main PRIVATE src/main.cpp)
 target_compile_features(main PRIVATE cxx_std_17)
+
+target_link_libraries(serial rt)
+target_link_libraries(main serial)
 
 target_link_libraries(main jetgpio)
 
