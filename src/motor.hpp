@@ -242,7 +242,7 @@ public:
     MotorInterface() {}
     ~MotorInterface() {}
 
-    serial::Serial arduino;
+    // serial::Serial arduino;
 
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
     virtual bool setDrivePercent(int leftPercent, int rightPercent) = 0;
@@ -274,7 +274,7 @@ private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
     Actuator actuators[NUM_ACTUATORS];
-    serial::Serial arduino;
+    // serial::Serial arduino;
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
@@ -288,8 +288,8 @@ public:
         actuators[1].~Actuator();
         new (&actuators[0]) Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B, LIM_SWITCH_1_EXT_PIN, LIM_SWITCH_1_CON_PIN);
         new (&actuators[1]) Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B, LIM_SWITCH_2_EXT_PIN, LIM_SWITCH_2_CON_PIN);
-        arduino.~Serial();
-        new (&arduino) serial::Serial(PORT_ARD, 115200);
+        // arduino.~Serial();
+        // new (&arduino) serial::Serial(PORT_ARD, 115200);
     }
 
     ~MotorController()
@@ -506,7 +506,7 @@ MotorInterface *getMotorContoller()
 {
     int error = initJetGpio();
 
-    if (error != 0)
+    if (error != 1)
     {
         return new SimulatedMotorController();
     }
