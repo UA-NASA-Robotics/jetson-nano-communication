@@ -1,3 +1,4 @@
+#pragma once
 
 #include <iostream>
 #include <unistd.h>
@@ -6,6 +7,8 @@
 #include <thread>
 #include "types.hpp"
 #include "serial/serial.h"
+
+#define NUM_ACTUATORS 2
 
 #define RIGHT_PIN 32            // Left drive motor PWM signal - output pin from jetson
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
@@ -27,7 +30,7 @@ private:
     static const int STOP_PWM = 0.0015 * FREQUENCY * 256;       // Pulse width of the PWM value to stop the drive motors
     static const int NUM_PARTITIONS = 0.0005 * FREQUENCY * 256; // Difference between STOP_PWM_VALUE and full fowards and full backwards PWM values
     int pwmPinNum;                                              // The pin number controlling the a PWM motor
-    int prevPWM = 0;                                            // Previous PWM value
+    int prevPercent = 0;                                        // Previous PWM value
 
 public:
     PWMDriveMotor() {}
@@ -62,6 +65,24 @@ public:
 
     void setPercent(int percent)
     {
+        // Check if percent is outside of [-100, 100]
+        if (percent > 100)
+        {
+            percent = 100;
+        }
+        else if (percent < -100)
+        {
+            percent = -100;
+        }
+
+        // If the percent equals the previous one, then return to reduce stuttering
+        if (percent == prevPercent)
+        {
+            return;
+        }
+
+        prevPercent = percent;
+
         int percentToPWM = percent * NUM_PARTITIONS / 100;
         int dutyCycle = STOP_PWM + percentToPWM;
         int errorCode = gpioPWM(pwmPinNum, dutyCycle);
@@ -153,8 +174,8 @@ public:
     {
         if (canExtend)
         {
-            gpioWrite(pinA, 0);
-            gpioWrite(pinB, 1);
+            gpioWrite(pinA, 1);
+            gpioWrite(pinB, 0);
             return true;
         }
         else
@@ -168,8 +189,8 @@ public:
     {
         if (canRetract)
         {
-            gpioWrite(pinA, 1);
-            gpioWrite(pinB, 0);
+            gpioWrite(pinA, 0);
+            gpioWrite(pinB, 1);
             return true;
         }
         else
@@ -180,8 +201,8 @@ public:
 
     void stopMovement()
     {
-        gpioWrite(pinA, 0);
-        gpioWrite(pinB, 0);
+        gpioWrite(pinA, 1);
+        gpioWrite(pinB, 1);
     }
 
     double* getAngles()
@@ -252,7 +273,7 @@ class MotorController : public MotorInterface
 private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
-    Actuator actuators[2];
+    Actuator actuators[NUM_ACTUATORS];
     serial::Serial arduino;
 
     bool disableDriveMotors = false;
@@ -288,11 +309,21 @@ public:
 
     Actuator *getActuator(int index)
     {
-        if (index >= 0 && index < 2)
+        if (index >= 0 && index < NUM_ACTUATORS)
         {
             return &actuators[index];
         }
         return nullptr;
+    }
+
+    Actuator *getActuator1()
+    {
+        return &actuators[0];
+    }
+
+    Actuator *getActuator2()
+    {
+        return &actuators[1];
     }
 
     // Sets the drive wheel percents [-100, 100] for the left and right wheel
@@ -325,47 +356,23 @@ public:
         }
     }
 
-    bool setActuatorPercent(double *percent)
+    bool setActuators(ActuatorMotion motions[NUM_ACTUATORS])
     {
-        double *endstops[2] = {actuators[0].getAngles(), actuators[1].getAngles()};
-        bool done = false;
-        double goal[2] = {0, 0};
-        bool extending[2] = {0, 0};
-        // TODO: implement reading serial data
-        double angle[2]; // read angle measures
-
-        for (int i = 0; i < 2; i++)
+        if (disableActuators)
         {
-            goal[i] = endstops[i][0] + percent[i] * (endstops[i][1] - endstops[i][0]);
-            if (goal[i] > angle[i])
-            {
-                extending[i] = true;
-            }
+            return false;
         }
-
-        while (!done)
+        else
         {
-            angle[2]; // read angle measures
-
-            for (int i = 0; i < 2; i++)
+            bool success = true;
+            for (int i = 0; i < NUM_ACTUATORS; i++)
             {
-                if ((angle[i] < goal[i]) & extending[i])
+                if (!actuators[i].setMotion(motions[i]))
                 {
-                    actuators[i].setMotion(ActuatorMotion::EXTENDING);
-                }
-                else if (extending[i])
-                {
-                    actuators[i].stopMovement();
-                }
-                else if ((angle[i] > goal[i]) & !extending[i])
-                {
-                    actuators[i].setMotion(ActuatorMotion::RETRACTING);
-                }
-                else if (!extending[i])
-                {
-                    actuators[i].stopMovement();
+                    success = false;
                 }
             }
+            return success;
         }
     }
 

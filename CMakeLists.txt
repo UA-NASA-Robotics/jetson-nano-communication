@@ -29,6 +29,12 @@ target_compile_features(jetgpio PUBLIC cxx_std_17)
 
 add_library(serial lib/serial/src/serial.cc lib/serial/src/impl/unix.cc)
 
+# Add enet
+include_directories(enet-1.3.18/include)
+add_library(serial lib/serial/src/serial.cc lib/serial/src/impl/unix.cc)
+add_library(enet enet-1.3.18/include/enet/enet.h enet-1.3.18/unix.c enet-1.3.18/callbacks.c enet-1.3.18/compress.c enet-1.3.18/host.c enet-1.3.18/list.c enet-1.3.18/packet.c enet-1.3.18/peer.c enet-1.3.18/protocol.c)
+target_compile_features(enet PUBLIC cxx_std_17)
+
 # add client.cpp as the main file
 add_executable(main)
 target_sources(main PRIVATE src/main.cpp)
@@ -38,6 +44,7 @@ target_link_libraries(serial rt)
 target_link_libraries(main serial)
 
 target_link_libraries(main jetgpio)
+target_link_libraries(main enet)
 
 # === boost ===
 find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
