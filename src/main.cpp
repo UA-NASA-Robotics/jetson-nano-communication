@@ -11,7 +11,7 @@
 #define VERSION "0.0.8"
 
 MotorInterface *motors = getMotorContoller();
-UDPServerHandler serverHandler;
+TCPServerHandler serverHandler;
 
 void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
 {
