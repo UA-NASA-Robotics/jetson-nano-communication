@@ -11,7 +11,10 @@
 #define VERSION "0.0.8"
 
 MotorInterface *motors = getMotorContoller();
-TCPServerHandler serverHandler;
+TCPServerHandler serverHandler(9003);
+UDPServerHandler udpServerHandler;
+
+std::thread tcpThread;
 
 void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
 {
@@ -43,13 +46,24 @@ void onDisconnect(ServerHandler *serverHandler)
     std::cout << "All actions stopped for now..." << std::endl;
 }
 
+void runServer(ServerHandler *serverHandler)
+{
+    serverHandler->run();
+}
+
 int main()
 {
+    udpServerHandler.setMotionUpdateCallback(onMotionUpdate);
+    udpServerHandler.setMacroCallback(onMacro);
+    udpServerHandler.setDisconnectCallback(onDisconnect);
+
     serverHandler.setMotionUpdateCallback(onMotionUpdate);
     serverHandler.setMacroCallback(onMacro);
     serverHandler.setDisconnectCallback(onDisconnect);
 
-    serverHandler.run();
+    tcpThread = std::thread(runServer, &serverHandler);
+
+    udpServerHandler.run();
 
     return 0;
 }
