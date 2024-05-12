@@ -7,6 +7,8 @@
 #include <thread>
 #include "types.hpp"
 #include "serial/serial.h"
+#include "arduino.hpp"
+#include <chrono>
 
 #define NUM_ACTUATORS 2
 
@@ -17,6 +19,10 @@
 #define ACTUATOR_2_PIN_A 28     // Front actuator extension signal (a) - output pin from jetson
 #define ACTUATOR_2_PIN_B 29     // Front actuator retration signal (b) - output pin from jetson
 #define PORT_ARD "/dev/ttyACM0"
+#define PITCH_IN 0
+#define PITCH_OUT 90
+#define ARM_IN 0
+#define ARM_OUT 90
 
 class PWMDriveMotor
 {
@@ -131,8 +137,8 @@ public:
     {
         if (canExtend)
         {
-            gpioWrite(pinA, 1);
-            gpioWrite(pinB, 0);
+            gpioWrite(pinA, 0);
+            gpioWrite(pinB, 1);
             return true;
         }
         else
@@ -146,8 +152,8 @@ public:
     {
         if (canRetract)
         {
-            gpioWrite(pinA, 0);
-            gpioWrite(pinB, 1);
+            gpioWrite(pinA, 1);
+            gpioWrite(pinB, 0);
             return true;
         }
         else
@@ -207,6 +213,8 @@ public:
     // Sets the actuator motion for the left and right actuator
     virtual bool setActuators(ActuatorMotion a1, ActuatorMotion a2) = 0;
 
+    virtual void setActuatorPercent(double *bytes) = 0;
+
     virtual bool stopMovement() = 0;
 
     // Cancels currently executing macro if any is executing, returns true if one was running, false if none was
@@ -231,7 +239,7 @@ private:
     PWMDriveMotor leftDrive;
     PWMDriveMotor rightDrive;
     Actuator actuators[NUM_ACTUATORS];
-    // serial::Serial arduino;
+    Arduino arduino;
 
     bool disableDriveMotors = false;
     bool disableActuators = false;
@@ -245,8 +253,7 @@ public:
         actuators[1].~Actuator();
         actuators[0] = Actuator(ACTUATOR_1_PIN_A, ACTUATOR_1_PIN_B);
         actuators[1] = Actuator(ACTUATOR_2_PIN_A, ACTUATOR_2_PIN_B);
-        // arduino.~Serial();
-        // new (&arduino) serial::Serial(PORT_ARD, 115200);
+        arduino = Arduino("/dev/ttyACM0", 115200);
     }
 
     ~MotorController()
@@ -333,6 +340,44 @@ public:
         }
     }
 
+    void setActuatorPercent(double *percents)
+    {
+	disableActuators = true;
+        double differences[2] = {PITCH_OUT - PITCH_IN, ARM_OUT - ARM_IN};
+        double *goals = percents;
+
+        bool extending[2] = {0, 0};
+        bool finishedMoving[2] = {0, 0};
+        double dataPoints[2] = {0, 0};
+
+        arduino.flushBuffer();
+        arduino.readFilterdData(dataPoints);
+
+        extending[0] = dataPoints[0] < goals[0];
+        extending[1] = dataPoints[1] < goals[1];
+
+        while (!finishedMoving[0] || !finishedMoving[1]) {
+            arduino.readFilterdData(dataPoints);
+
+            for (int i = 0; i < 2; i++) {
+                if (dataPoints[i] > goals[i] && extending[i] || dataPoints[i] < goals[i] && !extending[i]) {
+                    finishedMoving[i] = true;
+                }
+
+                if (!finishedMoving[i]) {
+                    if (extending[i]) {
+                        getActuator(i)->extend();
+                    } else {
+                        getActuator(i)->retract();
+                    }
+                } else {
+                    getActuator(i)->stopMovement();
+                }
+            }
+        }
+	disableActuators = false;
+    }
+
     bool stopMovement()
     {
         if (disableDriveMotors)
@@ -367,16 +412,37 @@ public:
     // Returns true if successfully started, false if not
     bool digCycle()
     {
-        // TODO: implement dig cycle to be executed in another thread
-        return false;
+	try {
+	    std::cout << "Executing Dig Cycle" << std::endl;
+            setActuatorPercent(new double[2] {3, 7});
+	    setDrivePercent(25, 25);
+	    std::this_thread::sleep_for(std::chrono::seconds(8));
+	    setDrivePercent(0, 0);
+	    setActuatorPercent(new double[2] {-20, -51});
+	    return true;
+	} catch (...) {
+	    std::cout << "Error" << std::endl;
+	    return false;
+	}
     }
 
     // Macro to execute a full dump cycle and disable manual actuator control in the meantime
     // Returns true if successfully started, false if not
     bool dumpCycle()
     {
-        // TODO: implement dump cycle to be executed in another thread
-        return false;
+	try {
+            std::cout << "Executing Dump Cycle" << std::endl;
+	    setDrivePercent(25, 25);
+	    std::this_thread::sleep_for(std::chrono::seconds(2));
+	    setDrivePercent(-20, -51);
+            setActuatorPercent(new double[2] {23, -10});
+	    setDrivePercent(-25, -25);
+	    std::this_thread::sleep_for(std::chrono::seconds(4));
+	    setDrivePercent(-20, -51);
+	    return true;
+	} catch (...) {
+	    return false;
+	}
     }
 
     // Macro to turn the robot <angle> degrees, -180 <= angle <= 180
@@ -405,6 +471,8 @@ public:
     {
         return false;
     }
+
+    void setActuatorPercent(double *bytes) {}
 
     bool stopMovement()
     {

@@ -12,9 +12,12 @@
 
 MotorInterface *motors = getMotorContoller();
 TCPServerHandler serverHandler(9003);
-UDPServerHandler udpServerHandler;
+// UDPServerHandler udpServerHandler;
 
 std::thread tcpThread;
+std::thread macroThread;
+
+std::string macroText = "";
 
 void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
 {
@@ -29,6 +32,7 @@ void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
     std::cout << "Right:\t" << data.rightDrivePercent << "%" << std::endl;
     std::cout << "Actuator 1:\t" << data.actuator1 << std::endl;
     std::cout << "Actuator 2:\t" << data.actuator2 << std::endl;
+    std::cout << macroText << std::endl;
 
     motors->setDrivePercent(data.leftDrivePercent * 0.25, data.rightDrivePercent * 0.25);
     motors->setActuators(data.actuator1, data.actuator2);
@@ -36,7 +40,15 @@ void onMotionUpdate(MotionPacketData data, ServerHandler *serverHandler)
 
 void onMacro(MacroPacketData data, ServerHandler *serverHandler)
 {
-    // TODO: implement macro handling
+    // macroText = "Executing macro " + data.macro + "\t(5=dump, 6=dig)";
+    if (data.macro == Macro::DUMP_CYCLE)
+    {
+	    motors->dumpCycle();
+    }
+    else if (data.macro == Macro::DIG_CYCLE)
+    {
+	    motors->digCycle();
+    }
 }
 
 // Reset all robot motion to 0
@@ -53,17 +65,17 @@ void runServer(ServerHandler *serverHandler)
 
 int main()
 {
-    udpServerHandler.setMotionUpdateCallback(onMotionUpdate);
-    udpServerHandler.setMacroCallback(onMacro);
-    udpServerHandler.setDisconnectCallback(onDisconnect);
+    // udpServerHandler.setMotionUpdateCallback(onMotionUpdate);
+    // udpServerHandler.setMacroCallback(onMacro);
+    // udpServerHandler.setDisconnectCallback(onDisconnect);
 
     serverHandler.setMotionUpdateCallback(onMotionUpdate);
     serverHandler.setMacroCallback(onMacro);
     serverHandler.setDisconnectCallback(onDisconnect);
 
-    tcpThread = std::thread(runServer, &serverHandler);
+    // tcpThread = std::thread(runServer, &serverHandler);
 
-    udpServerHandler.run();
+    serverHandler.run();
 
     return 0;
 }

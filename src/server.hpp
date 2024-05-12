@@ -26,8 +26,8 @@ enum Macro
     FULL_RETRACT,
     CARRY_POS,
     DUMP_CYCLE,
-    DUMP_WITH_MOVEMENT,
     DIG_CYCLE,
+    DUMP_NO_MOVEMENT,
     TURN_RIGHT_45,
     TURN_LEFT_45,
     TURN
@@ -342,14 +342,9 @@ public:
         /* A specific host address can be specified by   */
         /* enet_address_set_host (& address, "x.x.x.x"); */
 
-        int hostErr = enet_address_set_host_ip(&address, "0.0.0.0");
-        // address.host = ENET_HOST_ANY;
+        address.host = ENET_HOST_ANY;
         /* Bind the server to port 1234. */
         address.port = DEFAULT_PORT;
-
-        if (hostErr < 0) {
-            std::cout << "Error setting host addr: " << hostErr << std::endl;
-        }
 
         server = enet_host_create(
             &address /* the address to bind the server host to */,
