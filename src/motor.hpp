@@ -14,13 +14,8 @@
 #define LEFT_PIN 33             // Right drive motor PWM signal - output pin from jetson
 #define ACTUATOR_1_PIN_A 35     // Back actuator extension signal (a) - output pin from jetson
 #define ACTUATOR_1_PIN_B 36     // Back actuator retraction signal (b) - output pin from jetson
-#define LIM_SWITCH_1_EXT_PIN 37 // Back actuator extended position limit switch signal (1: stop) - input pin to jetson
-#define LIM_SWITCH_1_CON_PIN 38 // Back actuator retracted position limit switch signal (1: stop) - input pin to jetson
 #define ACTUATOR_2_PIN_A 28     // Front actuator extension signal (a) - output pin from jetson
 #define ACTUATOR_2_PIN_B 29     // Front actuator retration signal (b) - output pin from jetson
-#define LIM_SWITCH_2_EXT_PIN 23 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
-#define LIM_SWITCH_2_CON_PIN 26 // Front actuator extended position limit switch signal (1: stop) - input pin to jetson
-#define RELAY_PIN 51
 #define PORT_ARD "/dev/ttyACM0"
 
 class PWMDriveMotor
@@ -99,8 +94,6 @@ class Actuator
 private:
     int pinA;             // Extension signal logic pin output for actuator
     int pinB;             // Retration signal logic pin output for actuator
-    int switchExtendPin;  // Limit switch extended logic pin input
-    int switchRetractPin; // Limit switch retrated logic pin input
     double insideAngle;   // Angle of inside limit
     double outsideAngle;  // Angle of outside limit
 
