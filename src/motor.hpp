@@ -60,6 +60,8 @@ public:
 
     void setPercent(int percent)
     {
+        // Flip percent becuase of way physical motorrs are oriented
+        percent = -percent;
         // Check if percent is outside of [-100, 100]
         if (percent > 100)
         {
